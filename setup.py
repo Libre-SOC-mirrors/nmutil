@@ -15,7 +15,7 @@ test_requires = [
 ]
 
 setup(
-    name='nmigen',
+    name='nmutil',
     version=version,
     description="A nmigen utility library",
     long_description=README + '\n\n' + NEWS,
