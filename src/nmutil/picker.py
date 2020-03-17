@@ -1,12 +1,27 @@
 """ Priority Picker: optimised back-to-back PriorityEncoder and Decoder
     and MultiPriorityPicker: cascading mutually-exclusive pickers
 
-    The input is N bits, the output is N bits wide and only one is
-    enabled.
+    PriorityPicker: the input is N bits, the output is N bits wide and
+    only one is enabled.
+
+    MultiPriorityPicker: likewise except that there are M pickers and
+    each output is guaranteed mutually exclusive.  Optionally:
+    an "index" (and enable line) is also outputted.
+
+    MultiPriorityPicker is designed for port-selection, when there are
+    multiple "things" (of width N) contending for access to M "ports".
+    When the M=0 "thing" requests a port, it gets allocated port 0
+    (always).  However if the M=0 "thing" does *not* request a port,
+    this gives the M=1 "thing" the opportunity to gain access to port 0.
+
+    Given that N may potentially be much greater than M (16 bits wide
+    where M may be e.g. only 4) we can't just ok, "ok so M=N therefore
+    M=0 gets access to port 0, M=1 gets access to port 1" etc.
 """
 
-from nmigen import Module, Signal, Cat, Elaboratable, Array, Const
+from nmigen import Module, Signal, Cat, Elaboratable, Array, Const, Mux
 from nmigen.cli import verilog, rtlil
+import math
 
 class PriorityPicker(Elaboratable):
     """ implements a priority-picker.  input: N bits, output: N bits
@@ -16,6 +31,7 @@ class PriorityPicker(Elaboratable):
         # inputs
         self.i = Signal(wid, reset_less=True)
         self.o = Signal(wid, reset_less=True)
+        self.en_o = Signal(reset_less=True) # true if any output is true
 
     def elaborate(self, platform):
         m = Module()
@@ -33,6 +49,7 @@ class PriorityPicker(Elaboratable):
 
         # we like Cat(*xxx).  turn lists into concatenated bits
         m.d.comb += self.o.eq(Cat(*res))
+        m.d.comb += self.en_o.eq(self.o.bool()) # true if 1 input is true
 
         return m
 
@@ -52,14 +69,17 @@ class MultiPriorityPicker(Elaboratable):
         gets top priority, the second cannot have the same bit that
         the first has set, and so on.  To do this, a "mask" accumulates
         the output from the chain, masking the input to the next chain.
+
+        Also outputted (optional): an index for each picked "thing".
     """
-    def __init__(self, wid, levels):
+    def __init__(self, wid, levels, indices=False):
         self.levels = levels
         self.wid = wid
+        self.indices = indices
 
+        # create array of input and output (unary)
         self.i = [] # store the array of picker inputs
         self.o = [] # store the array of picker outputs
-
         for j in range(self.levels):
             i = Signal(self.wid, name="i_%d" % j, reset_less=True)
             o = Signal(self.wid, name="o_%d" % j, reset_less=True)
@@ -68,15 +88,29 @@ class MultiPriorityPicker(Elaboratable):
         self.i = Array(self.i)
         self.o = Array(self.o)
 
+        if not self.indices:
+            return
+
+        # add an array of "enables" and indices
+        self.en_o = Signal(self.levels, name="en_o", reset_less=True)
+        lidx = math.ceil(math.log2(self.levels+1))
+        idx_o = [] # store the array of indices
+        for j in range(self.levels):
+            i = Signal(lidx, name="idxo_%d" % j, reset_less=True)
+            idx_o.append(i)
+        self.idx_o = Array(idx_o)
+
     def elaborate(self, platform):
         m = Module()
         comb = m.d.comb
 
         prev_pp = None
         p_mask = None
+        pp_l = []
         for j in range(self.levels):
             o, i = self.o[j], self.i[j]
             pp = PriorityPicker(self.wid)
+            pp_l.append(pp)
             setattr(m.submodules, "pp%d" % j, pp)
             comb += o.eq(pp.o)
             if prev_pp is None:
@@ -89,6 +123,27 @@ class MultiPriorityPicker(Elaboratable):
                 p_mask = mask
             prev_pp = pp
 
+        if not self.indices:
+            return m
+
+        # for each picker enabled, pass that out and set a cascading index
+        lidx = math.ceil(math.log2(self.levels+1))
+        en_l = []
+        prev_count = None
+        for j in range(self.levels):
+            en_o = pp_l[j].en_o
+            en_l.append(en_o)
+            count1 = Signal(lidx, name="count_%d" % j, reset_less=True)
+            if prev_count is None:
+                comb += self.idx_o[j].eq(Mux(en_o, 1, 0))
+            else:
+                comb += count1.eq(prev_count + Const(1, lidx))
+                comb += self.idx_o[j].eq(Mux(en_o, count1, prev_count))
+            prev_count = self.idx_o[j]
+
+        # concat accumulated enable bits
+        comb += self.en_o.eq(Cat(*en_o))
+
         return m
 
     def __iter__(self):
@@ -100,7 +155,7 @@ class MultiPriorityPicker(Elaboratable):
 
 
 if __name__ == '__main__':
-    dut = MultiPriorityPicker(5, 4)
+    dut = MultiPriorityPicker(5, 4, True)
     vl = rtlil.convert(dut, ports=dut.ports())
     with open("test_multi_picker.il", "w") as f:
         f.write(vl)
