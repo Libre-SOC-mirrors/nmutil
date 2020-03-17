@@ -29,16 +29,23 @@ def latchregister(m, incoming, outgoing, settrue, name=None):
     with m.Else():
         m.d.comb += outgoing.eq(reg) # return input (combinatorial)
 
+def mkname(prefix, suffix):
+    if suffix is None:
+        return prefix
+    return "%s_%s" % (prefix, suffix)
 
 class SRLatch(Elaboratable):
-    def __init__(self, sync=True, llen=1):
+    def __init__(self, sync=True, llen=1, name=None):
         self.sync = sync
         self.llen = llen
-        self.s = Signal(llen, reset=0)
-        self.r = Signal(llen, reset=(1<<llen)-1) # defaults to off
-        self.q = Signal(llen, reset_less=True)
-        self.qn = Signal(llen, reset_less=True)
-        self.qlq = Signal(llen, reset_less=True)
+        s_n, r_n = mkname("s", name), mkname("r", name)
+        q_n, qn_n = mkname("q", name), mkname("qn", name)
+        qlq_n = mkname("qlq", name)
+        self.s = Signal(llen, name=s_n, reset=0)
+        self.r = Signal(llen, name=r_n, reset=(1<<llen)-1) # defaults to off
+        self.q = Signal(llen, name=q_n, reset_less=True)
+        self.qn = Signal(llen, name=qn_n, reset_less=True)
+        self.qlq = Signal(llen, name=qlq_n, reset_less=True)
 
     def elaborate(self, platform):
         m = Module()
