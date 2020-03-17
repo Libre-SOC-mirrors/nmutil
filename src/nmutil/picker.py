@@ -36,11 +36,12 @@ class PriorityPicker(Elaboratable):
     def elaborate(self, platform):
         m = Module()
 
+        # works by saying, "if all previous bits were zero, we get a chance"
         res = []
         ni = Signal(self.wid, reset_less = True)
         m.d.comb += ni.eq(~self.i)
         for i in range(0, self.wid):
-            t = Signal(reset_less = True)
+            t = Signal(name="t%d" % i, reset_less = True)
             res.append(t)
             if i == 0:
                 m.d.comb += t.eq(self.i[i])
@@ -49,6 +50,7 @@ class PriorityPicker(Elaboratable):
 
         # we like Cat(*xxx).  turn lists into concatenated bits
         m.d.comb += self.o.eq(Cat(*res))
+        # useful "is any output enabled" signal
         m.d.comb += self.en_o.eq(self.o.bool()) # true if 1 input is true
 
         return m
@@ -77,23 +79,22 @@ class MultiPriorityPicker(Elaboratable):
         self.wid = wid
         self.indices = indices
 
-        # create array of input and output (unary)
-        self.i = [] # store the array of picker inputs
-        self.o = [] # store the array of picker outputs
+        # only the one input, but multiple (single) bit outputs
+        self.i = Signal(self.wid, reset_less=True)
+
+        # create array of (single-bit) outputs (unary)
+        o_l = [] # array of picker outputs
         for j in range(self.levels):
-            i = Signal(self.wid, name="i_%d" % j, reset_less=True)
             o = Signal(self.wid, name="o_%d" % j, reset_less=True)
-            self.i.append(i)
-            self.o.append(o)
-        self.i = Array(self.i)
-        self.o = Array(self.o)
+            o_l.append(o)
+        self.o = Array(o_l)
 
         if not self.indices:
             return
 
         # add an array of "enables" and indices
         self.en_o = Signal(self.levels, name="en_o", reset_less=True)
-        lidx = math.ceil(math.log2(self.levels+1))
+        lidx = math.ceil(math.log2(self.levels))
         idx_o = [] # store the array of indices
         for j in range(self.levels):
             i = Signal(lidx, name="idxo_%d" % j, reset_less=True)
@@ -104,11 +105,16 @@ class MultiPriorityPicker(Elaboratable):
         m = Module()
         comb = m.d.comb
 
+        # create Priority Pickers, accumulate their outputs and prevent
+        # the next one in the chain from selecting that output bit.
+        # the input from the current picker will be "masked" and connected
+        # to the *next* picker on the next loop
         prev_pp = None
         p_mask = None
         pp_l = []
+        i = self.i
         for j in range(self.levels):
-            o, i = self.o[j], self.i[j]
+            o = self.o[j]
             pp = PriorityPicker(self.wid)
             pp_l.append(pp)
             setattr(m.submodules, "pp%d" % j, pp)
@@ -121,22 +127,23 @@ class MultiPriorityPicker(Elaboratable):
                 comb += mask.eq(prev_pp.o | p_mask) # accumulate output bits
                 comb += pp.i.eq(i & ~mask)          # mask out input
                 p_mask = mask
+            i = pp.i # for input to next round
             prev_pp = pp
 
         if not self.indices:
             return m
 
         # for each picker enabled, pass that out and set a cascading index
-        lidx = math.ceil(math.log2(self.levels+1))
+        lidx = math.ceil(math.log2(self.levels))
         en_l = []
         prev_count = None
         for j in range(self.levels):
             en_o = pp_l[j].en_o
             en_l.append(en_o)
-            count1 = Signal(lidx, name="count_%d" % j, reset_less=True)
             if prev_count is None:
-                comb += self.idx_o[j].eq(Mux(en_o, 1, 0))
+                comb += self.idx_o[j].eq(0)
             else:
+                count1 = Signal(lidx, name="count_%d" % j, reset_less=True)
                 comb += count1.eq(prev_count + Const(1, lidx))
                 comb += self.idx_o[j].eq(Mux(en_o, count1, prev_count))
             prev_count = self.idx_o[j]
@@ -147,8 +154,12 @@ class MultiPriorityPicker(Elaboratable):
         return m
 
     def __iter__(self):
-        yield from self.i
+        yield self.i
         yield from self.o
+        if not self.indices:
+            return
+        yield self.en_o
+        yield from self.idx_o
 
     def ports(self):
         return list(self)
