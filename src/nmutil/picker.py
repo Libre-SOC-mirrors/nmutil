@@ -89,11 +89,13 @@ class MultiPriorityPicker(Elaboratable):
             o_l.append(o)
         self.o = Array(o_l)
 
+        # add an array of "enables"
+        self.en_o = Signal(self.levels, name="en_o", reset_less=True)
+
         if not self.indices:
             return
 
-        # add an array of "enables" and indices
-        self.en_o = Signal(self.levels, name="en_o", reset_less=True)
+        # add an array of indices
         lidx = math.ceil(math.log2(self.levels))
         idx_o = [] # store the array of indices
         for j in range(self.levels):
@@ -130,16 +132,21 @@ class MultiPriorityPicker(Elaboratable):
             i = pp.i # for input to next round
             prev_pp = pp
 
+        # accumulate the enables
+        en_l = []
+        for j in range(self.levels):
+            en_l.append(pp_l[j].en_o)
+        # concat accumulated enable bits
+        comb += self.en_o.eq(Cat(*en_l))
+
         if not self.indices:
             return m
 
         # for each picker enabled, pass that out and set a cascading index
         lidx = math.ceil(math.log2(self.levels))
-        en_l = []
         prev_count = None
         for j in range(self.levels):
             en_o = pp_l[j].en_o
-            en_l.append(en_o)
             if prev_count is None:
                 comb += self.idx_o[j].eq(0)
             else:
@@ -147,9 +154,6 @@ class MultiPriorityPicker(Elaboratable):
                 comb += count1.eq(prev_count + Const(1, lidx))
                 comb += self.idx_o[j].eq(Mux(en_o, count1, prev_count))
             prev_count = self.idx_o[j]
-
-        # concat accumulated enable bits
-        comb += self.en_o.eq(Cat(*en_o))
 
         return m
 
