@@ -23,7 +23,8 @@
 # TO PROVIDE MAINTENANCE, SUPPORT, UPDATES, ENHANCEMENTS, OR
 # MODIFICATIONS.
 
-from nmigen import Module, Signal, Memory, Mux, Elaboratable
+from nmigen.compat.fhdl.specials import Memory
+from nmigen import Module, Signal, Mux, Elaboratable
 from nmigen.utils import bits_for
 from nmigen.cli import main
 from nmigen.lib.fifo import FIFOInterface
@@ -39,7 +40,7 @@ class Queue(FIFOInterface, Elaboratable):
             * :depth: queue depth.  NOTE: may be set to 0 (this is ok)
             * :fwft : first-write, fall-through mode (Chisel Queue "flow" mode)
             * :pipe : pipe mode.  NOTE: this mode can cause unanticipated
-                      problems.  when read is enabled, so is writeable.
+                      problems.  when read is enabled, so is w_rdy.
                       therefore if read is enabled, the data ABSOLUTELY MUST
                       be read.
 
@@ -49,10 +50,10 @@ class Queue(FIFOInterface, Elaboratable):
             Attributes:
             * level: available free space (number of unread entries)
 
-            din  = enq_data, writable  = enq_ready, we = enq_valid
-            dout = deq_data, re = deq_ready, readable = deq_valid
+            w_data  = enq_data, w_rdy  = enq_ready, w_en = enq_valid
+            r_data = deq_data, r_en = deq_ready, r_rdy = deq_valid
         """
-        FIFOInterface.__init__(self, width, depth, fwft)
+        FIFOInterface.__init__(self, width=width, depth=depth, fwft=fwft)
         self.pipe = pipe
         self.depth = depth
         self.level = Signal(bits_for(depth))
@@ -62,6 +63,7 @@ class Queue(FIFOInterface, Elaboratable):
 
         # set up an SRAM.  XXX bug in Memory: cannot create SRAM of depth 1
         ram = Memory(self.width, self.depth if self.depth > 1 else 2)
+        m.submodules.ram = ram
         m.submodules.ram_read = ram_read = ram.read_port(domain="comb")
         m.submodules.ram_write = ram_write = ram.write_port()
 
@@ -70,13 +72,13 @@ class Queue(FIFOInterface, Elaboratable):
         # for people familiar with the chisel Decoupled library:
         # enq is "enqueue" (data in, aka "prev stage"),
         # deq is "dequeue" (data out, aka "next stage")
-        p_ready_o = self.writable
-        p_valid_i = self.we
-        enq_data = self.din # aka p_data_i
+        p_ready_o = self.w_rdy
+        p_valid_i = self.w_en
+        enq_data = self.w_data # aka p_data_i
 
-        n_valid_o = self.readable
-        n_ready_i = self.re
-        deq_data = self.dout # aka n_data_o
+        n_valid_o = self.r_rdy
+        n_ready_i = self.r_en
+        deq_data = self.r_data # aka n_data_o
 
         # intermediaries
         ptr_width = bits_for(self.depth - 1) if self.depth > 1 else 0
@@ -103,7 +105,7 @@ class Queue(FIFOInterface, Elaboratable):
                      do_enq.eq(p_ready_o & p_valid_i), # write conditions ok
                      do_deq.eq(n_ready_i & n_valid_o), # read conditions ok
 
-                     # set readable and writable (NOTE: see pipe mode below)
+                     # set r_rdy and w_rdy (NOTE: see pipe mode below)
                      n_valid_o.eq(~empty), # cannot read if empty!
                      p_ready_o.eq(~full),  # cannot write if full!
 
@@ -142,8 +144,8 @@ class Queue(FIFOInterface, Elaboratable):
                 with m.If(n_ready_i):
                     m.d.comb += do_enq.eq(0)
 
-        # pipe mode: if next stage says it's ready (readable), we
-        #            *must* declare the input ready (writeable).
+        # pipe mode: if next stage says it's ready (r_rdy), w_en
+        #            *must* declare the input ready (w_rdy).
         if self.pipe:
             with m.If(n_ready_i):
                 m.d.comb += p_ready_o.eq(1)
@@ -171,16 +173,16 @@ if __name__ == "__main__":
     def queue_ports(queue, name_prefix):
         retval = []
         for name in ["level",
-                     "dout",
-                     "readable",
-                     "writable"]:
+                     "r_data",
+                     "r_rdy",
+                     "w_rdy"]:
             port = getattr(queue, name)
             signal = Signal(port.shape(), name=name_prefix+name)
             m.d.comb += signal.eq(port)
             retval.append(signal)
-        for name in ["re",
-                     "din",
-                     "we"]:
+        for name in ["r_en",
+                     "w_data",
+                     "w_en"]:
             port = getattr(queue, name)
             signal = Signal(port.shape(), name=name_prefix+name)
             m.d.comb += port.eq(signal)
