@@ -23,7 +23,7 @@ endmodule
 
 def latchregister(m, incoming, outgoing, settrue, name=None):
     reg = Signal.like(incoming, name=name) # make reg same as input. reset OK.
-    with m.If(settrue):
+    with m.If(settrue): # pass in some kind of expression/condition here
         m.d.sync += reg.eq(incoming)      # latch input into register
         m.d.comb += outgoing.eq(incoming) # return input (combinatorial)
     with m.Else():
