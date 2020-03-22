@@ -1,6 +1,6 @@
 from nmigen.compat.sim import run_simulation
 from nmigen.cli import verilog, rtlil
-from nmigen import Signal, Module, Const, Elaboratable
+from nmigen import Record, Signal, Module, Const, Elaboratable
 
 """ jk latch
 
@@ -22,7 +22,11 @@ endmodule
 """
 
 def latchregister(m, incoming, outgoing, settrue, name=None):
-    reg = Signal.like(incoming, name=name) # make reg same as input. reset OK.
+    # make reg same as input. reset OK.
+    if isinstance(incoming, Record):
+        reg = Record.like(incoming, name=name)
+    else:
+        reg = Signal.like(incoming, name=name)
     with m.If(settrue): # pass in some kind of expression/condition here
         m.d.sync += reg.eq(incoming)      # latch input into register
         m.d.comb += outgoing.eq(incoming) # return input (combinatorial)
