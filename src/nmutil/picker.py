@@ -170,7 +170,15 @@ class MultiPriorityPicker(Elaboratable):
 
 
 if __name__ == '__main__':
+    dut = PriorityPicker(16)
+    vl = rtlil.convert(dut, ports=dut.ports())
+    with open("test_picker.il", "w") as f:
+        f.write(vl)
     dut = MultiPriorityPicker(5, 4, True)
     vl = rtlil.convert(dut, ports=dut.ports())
     with open("test_multi_picker.il", "w") as f:
+        f.write(vl)
+    dut = MultiPriorityPicker(5, 4, False)
+    vl = rtlil.convert(dut, ports=dut.ports())
+    with open("test_multi_picker_noidx.il", "w") as f:
         f.write(vl)
