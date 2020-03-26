@@ -1,0 +1,23 @@
+image: debian:10
+
+build:
+    stage: build
+    script:
+        - apt-get update && apt-get -y install build-essential git python3-dev python3-pip python3-setuptools python3-wheel pkg-config tcl-dev libreadline-dev bison flex libffi-dev
+
+        - git clone https://github.com/YosysHQ/yosys.git ../yosys
+        - pushd ../yosys
+        - make config-gcc
+        - make -j$(nproc)
+        - make install
+        - popd
+        - yosys -V
+
+        - git clone https://github.com/m-labs/nmigen.git ../nmigen
+        - pushd ../nmigen
+        - python3 setup.py develop
+        - popd
+
+        - python3 setup.py develop
+
+        - python3 setup.py test
