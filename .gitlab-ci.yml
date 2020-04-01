@@ -10,7 +10,7 @@ build:
             python3-setuptools python3-wheel pkg-config tcl-dev
             libreadline-dev bison flex libffi-dev
 
-        - git clone https://github.com/YosysHQ/yosys.git ../yosys
+        - git clone --depth 1 https://github.com/YosysHQ/yosys.git ../yosys
         - pushd ../yosys
         - make config-gcc
         - make -j$(nproc)
@@ -18,7 +18,7 @@ build:
         - popd
         - yosys -V
 
-        - git clone https://github.com/m-labs/nmigen.git ../nmigen
+        - git clone --depth 1 https://github.com/nmigen/nmigen.git ../nmigen
         - pushd ../nmigen
         - python3 setup.py develop
         - popd
