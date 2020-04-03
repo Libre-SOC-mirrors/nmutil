@@ -1,15 +1,28 @@
 image: debian:10
 
+cache:
+    paths:
+        - ccache
+
 build:
     stage: build
-    script:
+    before_script:
         - apt-get update
         - >-
             apt-get -y install
             build-essential git python3-dev python3-pip
             python3-setuptools python3-wheel pkg-config tcl-dev
-            libreadline-dev bison flex libffi-dev
-
+            libreadline-dev bison flex libffi-dev ccache
+        - export PATH="/usr/lib/ccache:$PATH"
+        - export CCACHE_BASEDIR="$PWD"
+        - export CCACHE_DIR="$PWD/ccache"
+        - export CCACHE_COMPILERCHECK=content
+        - ccache --zero-stats || true
+        - ccache --show-stats || true
+    after_script:
+        - export CCACHE_DIR="$PWD/ccache"
+        - ccache --show-stats
+    script:
         - git clone --depth 1 https://github.com/YosysHQ/yosys.git yosys
         - pushd yosys
         - make config-gcc
