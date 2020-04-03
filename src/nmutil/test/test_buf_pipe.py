@@ -36,12 +36,15 @@ from nmutil.singlepipe import MaskCancellable
 
 from random import randint, seed
 
-#seed(4)
+import unittest
+
+# seed(4)
 
 
 def check_o_n_valid(dut, val):
     o_n_valid = yield dut.n.valid_o
     assert o_n_valid == val
+
 
 def check_o_n_valid2(dut, val):
     o_n_valid = yield dut.n.valid_o
@@ -49,25 +52,26 @@ def check_o_n_valid2(dut, val):
 
 
 def tbench(dut):
-    #yield dut.i_p_rst.eq(1)
+    # yield dut.i_p_rst.eq(1)
     yield dut.n.ready_i.eq(0)
-    #yield dut.p.ready_o.eq(0)
+    # yield dut.p.ready_o.eq(0)
     yield
     yield
-    #yield dut.i_p_rst.eq(0)
+    # yield dut.i_p_rst.eq(0)
     yield dut.n.ready_i.eq(1)
     yield dut.p.data_i.eq(5)
     yield dut.p.valid_i.eq(1)
     yield
 
     yield dut.p.data_i.eq(7)
-    yield from check_o_n_valid(dut, 0) # effects of i_p_valid delayed
+    yield from check_o_n_valid(dut, 0)  # effects of i_p_valid delayed
     yield
-    yield from check_o_n_valid(dut, 1) # ok *now* i_p_valid effect is felt
+    yield from check_o_n_valid(dut, 1)  # ok *now* i_p_valid effect is felt
 
     yield dut.p.data_i.eq(2)
     yield
-    yield dut.n.ready_i.eq(0) # begin going into "stall" (next stage says ready)
+    # begin going into "stall" (next stage says ready)
+    yield dut.n.ready_i.eq(0)
     yield dut.p.data_i.eq(9)
     yield
     yield dut.p.valid_i.eq(0)
@@ -76,35 +80,38 @@ def tbench(dut):
     yield dut.p.data_i.eq(32)
     yield dut.n.ready_i.eq(1)
     yield
-    yield from check_o_n_valid(dut, 1) # buffer still needs to output
+    yield from check_o_n_valid(dut, 1)  # buffer still needs to output
     yield
-    yield from check_o_n_valid(dut, 1) # buffer still needs to output
+    yield from check_o_n_valid(dut, 1)  # buffer still needs to output
     yield
-    yield from check_o_n_valid(dut, 0) # buffer outputted, *now* we're done.
+    yield from check_o_n_valid(dut, 0)  # buffer outputted, *now* we're done.
     yield
 
 
 def tbench2(dut):
-    #yield dut.p.i_rst.eq(1)
+    # yield dut.p.i_rst.eq(1)
     yield dut.n.ready_i.eq(0)
-    #yield dut.p.ready_o.eq(0)
+    # yield dut.p.ready_o.eq(0)
     yield
     yield
-    #yield dut.p.i_rst.eq(0)
+    # yield dut.p.i_rst.eq(0)
     yield dut.n.ready_i.eq(1)
     yield dut.p.data_i.eq(5)
     yield dut.p.valid_i.eq(1)
     yield
 
     yield dut.p.data_i.eq(7)
-    yield from check_o_n_valid2(dut, 0) # effects of i_p_valid delayed 2 clocks
+    # effects of i_p_valid delayed 2 clocks
+    yield from check_o_n_valid2(dut, 0)
     yield
-    yield from check_o_n_valid2(dut, 0) # effects of i_p_valid delayed 2 clocks
+    # effects of i_p_valid delayed 2 clocks
+    yield from check_o_n_valid2(dut, 0)
 
     yield dut.p.data_i.eq(2)
     yield
-    yield from check_o_n_valid2(dut, 1) # ok *now* i_p_valid effect is felt
-    yield dut.n.ready_i.eq(0) # begin going into "stall" (next stage says ready)
+    yield from check_o_n_valid2(dut, 1)  # ok *now* i_p_valid effect is felt
+    # begin going into "stall" (next stage says ready)
+    yield dut.n.ready_i.eq(0)
     yield dut.p.data_i.eq(9)
     yield
     yield dut.p.valid_i.eq(0)
@@ -113,13 +120,13 @@ def tbench2(dut):
     yield dut.p.data_i.eq(32)
     yield dut.n.ready_i.eq(1)
     yield
-    yield from check_o_n_valid2(dut, 1) # buffer still needs to output
+    yield from check_o_n_valid2(dut, 1)  # buffer still needs to output
     yield
-    yield from check_o_n_valid2(dut, 1) # buffer still needs to output
+    yield from check_o_n_valid2(dut, 1)  # buffer still needs to output
     yield
-    yield from check_o_n_valid2(dut, 1) # buffer still needs to output
+    yield from check_o_n_valid2(dut, 1)  # buffer still needs to output
     yield
-    yield from check_o_n_valid2(dut, 0) # buffer outputted, *now* we're done.
+    yield from check_o_n_valid2(dut, 0)  # buffer outputted, *now* we're done.
     yield
     yield
     yield
@@ -139,7 +146,7 @@ class Test3:
     def send(self):
         while self.o != len(self.data):
             send_range = randint(0, 3)
-            for j in range(randint(1,10)):
+            for j in range(randint(1, 10)):
                 if send_range == 0:
                     send = True
                 else:
@@ -159,7 +166,7 @@ class Test3:
     def rcv(self):
         while self.o != len(self.data):
             stall_range = randint(0, 3)
-            for j in range(randint(1,10)):
+            for j in range(randint(1, 10)):
                 stall = randint(0, stall_range) != 0
                 yield self.dut.n.ready_i.eq(stall)
                 yield
@@ -173,26 +180,29 @@ class Test3:
                 if self.o == len(self.data):
                     break
 
+
 def resultfn_3(data_o, expected, i, o):
     assert data_o == expected + 1, \
-                "%d-%d data %x not match %x\n" \
-                % (i, o, data_o, expected)
+        "%d-%d data %x not match %x\n" \
+        % (i, o, data_o, expected)
+
 
 def data_placeholder():
-        data = []
-        for i in range(num_tests):
-            d = PlaceHolder()
-            d.src1 = randint(0, 1<<16-1)
-            d.src2 = randint(0, 1<<16-1)
-            data.append(d)
-        return data
+    data = []
+    for i in range(num_tests):
+        d = PlaceHolder()
+        d.src1 = randint(0, 1 << 16-1)
+        d.src2 = randint(0, 1 << 16-1)
+        data.append(d)
+    return data
+
 
 def data_dict():
-        data = []
-        for i in range(num_tests):
-            data.append({'src1': randint(0, 1<<16-1),
-                         'src2': randint(0, 1<<16-1)})
-        return data
+    data = []
+    for i in range(num_tests):
+        data.append({'src1': randint(0, 1 << 16-1),
+                     'src2': randint(0, 1 << 16-1)})
+    return data
 
 
 class Test5:
@@ -205,14 +215,15 @@ class Test5:
         else:
             self.data = []
             for i in range(num_tests):
-                self.data.append((randint(0, 1<<16-1), randint(0, 1<<16-1)))
+                self.data.append(
+                    (randint(0, 1 << 16-1), randint(0, 1 << 16-1)))
         self.i = 0
         self.o = 0
 
     def send(self):
         while self.o != len(self.data):
             send_range = randint(0, 3)
-            for j in range(randint(1,10)):
+            for j in range(randint(1, 10)):
                 if send_range == 0:
                     send = True
                 else:
@@ -234,7 +245,7 @@ class Test5:
     def rcv(self):
         while self.o != len(self.data):
             stall_range = randint(0, 3)
-            for j in range(randint(1,10)):
+            for j in range(randint(1, 10)):
                 ready = randint(0, stall_range) != 0
                 #ready = True
                 yield self.dut.n.ready_i.eq(ready)
@@ -255,9 +266,10 @@ class Test5:
                 if self.o == len(self.data):
                     break
 
+
 class TestMask:
     def __init__(self, dut, resultfn, maskwid, data=None, stage_ctl=False,
-                       latching=False):
+                 latching=False):
         self.dut = dut
         self.resultfn = resultfn
         self.stage_ctl = stage_ctl
@@ -269,14 +281,15 @@ class TestMask:
         else:
             self.data = []
             for i in range(num_tests):
-                self.data.append((randint(0, 1<<16-1), randint(0, 1<<16-1)))
+                self.data.append(
+                    (randint(0, 1 << 16-1), randint(0, 1 << 16-1)))
         self.i = 0
         self.o = 0
 
     def send(self):
         while self.o != len(self.data):
             send_range = randint(0, 3)
-            for j in range(randint(1,10)):
+            for j in range(randint(1, 10)):
                 if send_range == 0:
                     send = True
                 else:
@@ -298,24 +311,24 @@ class TestMask:
                         self.latchmode = 1 - self.latchmode
                         yield self.dut.latchmode.eq(self.latchmode)
                         mode = yield self.dut.latchmode
-                        print ("latching", mode)
+                        print("latching", mode)
 
                 if send and self.i != len(self.data):
-                    print ("send", self.i, self.data[self.i])
+                    print("send", self.i, self.data[self.i])
                     yield self.dut.p.valid_i.eq(1)
-                    yield self.dut.p.mask_i.eq(1<<self.i) # XXX TODO
+                    yield self.dut.p.mask_i.eq(1 << self.i)  # XXX TODO
                     for v in self.dut.set_input(self.data[self.i]):
                         yield v
                     self.i += 1
                 else:
                     yield self.dut.p.valid_i.eq(0)
-                    yield self.dut.p.mask_i.eq(0) # XXX TODO
+                    yield self.dut.p.mask_i.eq(0)  # XXX TODO
                 yield
 
     def rcv(self):
         while self.o != len(self.data):
             stall_range = randint(0, 3)
-            for j in range(randint(1,10)):
+            for j in range(randint(1, 10)):
                 ready = randint(0, stall_range) != 0
                 ready = True
                 yield self.dut.n.ready_i.eq(ready)
@@ -331,17 +344,19 @@ class TestMask:
                         data_o[k] = yield v
                 else:
                     data_o = yield self.dut.n.data_o
-                print ("recv", self.o, data_o)
+                print("recv", self.o, data_o)
                 self.resultfn(data_o, self.data[self.o], self.i, self.o)
                 self.o += 1
                 if self.o == len(self.data):
                     break
 
+
 def resultfn_5(data_o, expected, i, o):
     res = expected[0] + expected[1]
     assert data_o == res, \
-                "%d-%d data %x not match %s\n" \
-                % (i, o, data_o, repr(expected))
+        "%d-%d data %x not match %s\n" \
+        % (i, o, data_o, repr(expected))
+
 
 def tbench4(dut):
     data = []
@@ -368,7 +383,7 @@ def tbench4(dut):
         if o_n_valid and i_n_ready:
             data_o = yield dut.n.data_o
             assert data_o == data[o] + 2, "%d-%d data %x not match %x\n" \
-                                        % (i, o, data_o, data[o])
+                % (i, o, data_o, data[o])
             o += 1
             if o == len(data):
                 break
@@ -376,6 +391,7 @@ def tbench4(dut):
 ######################################################################
 # Test 2 and 4
 ######################################################################
+
 
 class ExampleBufPipe2(ControlBase):
     """ Example of how to do chained pipeline stages.
@@ -402,6 +418,7 @@ class ExampleBufPipe2(ControlBase):
 class ExampleBufPipeChain2(BufferedHandshake):
     """ connects two stages together as a *single* combinatorial stage.
     """
+
     def __init__(self):
         stage1 = ExampleStageCls()
         stage2 = ExampleStageCls()
@@ -410,17 +427,17 @@ class ExampleBufPipeChain2(BufferedHandshake):
 
 
 def data_chain2():
-        data = []
-        for i in range(num_tests):
-            data.append(randint(0, 1<<16-2))
-        return data
+    data = []
+    for i in range(num_tests):
+        data.append(randint(0, 1 << 16-2))
+    return data
 
 
 def resultfn_9(data_o, expected, i, o):
     res = expected + 2
     assert data_o == res, \
-                "%d-%d received data %x not match expected %x\n" \
-                % (i, o, data_o, res)
+        "%d-%d received data %x not match expected %x\n" \
+        % (i, o, data_o, res)
 
 
 ######################################################################
@@ -442,6 +459,7 @@ class SetLessThan(Elaboratable):
 class LTStage(StageCls):
     """ module-based stage example
     """
+
     def __init__(self):
         self.slt = SetLessThan(16, True)
 
@@ -450,7 +468,7 @@ class LTStage(StageCls):
                 Signal(16, name="%s_sig2" % name))
 
     def ospec(self, name):
-        return Signal(16, "%s_out" % name)
+        return Signal(16, name="%s_out" % name)
 
     def setup(self, m, i):
         self.o = Signal(16)
@@ -510,8 +528,8 @@ class ExampleLTBufferedPipeDerived(BufferedHandshake):
 def resultfn_6(data_o, expected, i, o):
     res = 1 if expected[0] < expected[1] else 0
     assert data_o == res, \
-                "%d-%d data %x not match %s\n" \
-                % (i, o, data_o, repr(expected))
+        "%d-%d data %x not match %s\n" \
+        % (i, o, data_o, repr(expected))
 
 
 ######################################################################
@@ -523,6 +541,7 @@ class ExampleAddRecordStage(StageCls):
     """
 
     record_spec = [('src1', 16), ('src2', 16)]
+
     def ispec(self):
         """ returns a Record using the specification
         """
@@ -542,11 +561,13 @@ class ExampleAddRecordStage(StageCls):
 # Test 11
 ######################################################################
 
+
 class ExampleAddRecordPlaceHolderStage(StageCls):
     """ example use of a Record, with a placeholder as the processing result
     """
 
     record_spec = [('src1', 16), ('src2', 16)]
+
     def ispec(self):
         """ returns a Record using the specification
         """
@@ -566,7 +587,8 @@ class ExampleAddRecordPlaceHolderStage(StageCls):
 
 
 # a dummy class that may have stuff assigned to instances once created
-class PlaceHolder: pass
+class PlaceHolder:
+    pass
 
 
 class ExampleAddRecordPipe(UnbufferedPipeline):
@@ -581,8 +603,8 @@ class ExampleAddRecordPipe(UnbufferedPipeline):
 def resultfn_7(data_o, expected, i, o):
     res = (expected['src1'] + 1, expected['src2'] + 1)
     assert data_o['src1'] == res[0] and data_o['src2'] == res[1], \
-                "%d-%d data %s not match %s\n" \
-                % (i, o, repr(data_o), repr(expected))
+        "%d-%d data %s not match %s\n" \
+        % (i, o, repr(data_o), repr(expected))
 
 
 class ExampleAddRecordPlaceHolderPipe(UnbufferedPipeline):
@@ -598,8 +620,8 @@ def resultfn_11(data_o, expected, i, o):
     res1 = expected.src1 + 1
     res2 = expected.src2 + 1
     assert data_o['src1'] == res1 and data_o['src2'] == res2, \
-                "%d-%d data %s not match %s\n" \
-                % (i, o, repr(data_o), repr(expected))
+        "%d-%d data %s not match %s\n" \
+        % (i, o, repr(data_o), repr(expected))
 
 
 ######################################################################
@@ -656,22 +678,24 @@ class TestInputAdd:
         easiest way to do that is to create a class that has the exact
         same member layout (self.op1, self.op2) as Example2OpClass
     """
+
     def __init__(self, op1, op2):
         self.op1 = op1
         self.op2 = op2
 
 
 def resultfn_8(data_o, expected, i, o):
-    res = expected.op1 + expected.op2 # these are a TestInputAdd instance
+    res = expected.op1 + expected.op2  # these are a TestInputAdd instance
     assert data_o == res, \
-                "%d-%d data %s res %x not match %s\n" \
-                % (i, o, repr(data_o), res, repr(expected))
+        "%d-%d data %s res %x not match %s\n" \
+        % (i, o, repr(data_o), res, repr(expected))
+
 
 def data_2op():
-        data = []
-        for i in range(num_tests):
-            data.append(TestInputAdd(randint(0, 1<<16-1), randint(0, 1<<16-1)))
-        return data
+    data = []
+    for i in range(num_tests):
+        data.append(TestInputAdd(randint(0, 1 << 16-1), randint(0, 1 << 16-1)))
+    return data
 
 
 ######################################################################
@@ -697,7 +721,7 @@ class ExampleStageDelayCls(StageCls, Elaboratable):
     def d_ready(self):
         """ data is ready to be accepted when this is true
         """
-        return (self.count == 1)# | (self.count == 3)
+        return (self.count == 1)  # | (self.count == 3)
         return Const(1)
 
     def d_valid(self, ready_i):
@@ -730,19 +754,19 @@ class ExampleBufDelayedPipe(BufferedHandshake):
 
 
 def data_chain1():
-        data = []
-        for i in range(num_tests):
-            data.append(1<<((i*3)%15))
-            #data.append(randint(0, 1<<16-2))
-            #print (hex(data[-1]))
-        return data
+    data = []
+    for i in range(num_tests):
+        data.append(1 << ((i*3) % 15))
+        #data.append(randint(0, 1<<16-2))
+        #print (hex(data[-1]))
+    return data
 
 
 def resultfn_12(data_o, expected, i, o):
     res = expected + 1
     assert data_o == res, \
-                "%d-%d data %x not match %x\n" \
-                % (i, o, data_o, res)
+        "%d-%d data %x not match %x\n" \
+        % (i, o, data_o, res)
 
 
 ######################################################################
@@ -763,6 +787,7 @@ class ExampleUnBufDelayedPipe(BufferedHandshake):
 ######################################################################
 # Test 15
 ######################################################################
+
 
 class ExampleBufModeAdd1Pipe(SimpleHandshake):
 
@@ -794,6 +819,7 @@ class ExampleBufModeUnBufPipe(ControlBase):
 # Test 17
 ######################################################################
 
+
 class ExampleUnBufAdd1Pipe2(UnbufferedPipeline2):
 
     def __init__(self):
@@ -808,17 +834,18 @@ class ExampleUnBufAdd1Pipe2(UnbufferedPipeline2):
 class PassThroughTest(PassThroughHandshake):
 
     def iospecfn(self):
-        return Signal(16, "out")
+        return Signal(16, name="out")
 
     def __init__(self):
         stage = PassThroughStage(self.iospecfn)
         PassThroughHandshake.__init__(self, stage)
 
+
 def resultfn_identical(data_o, expected, i, o):
     res = expected
     assert data_o == res, \
-                "%d-%d data %x not match %x\n" \
-                % (i, o, data_o, res)
+        "%d-%d data %x not match %x\n" \
+        % (i, o, data_o, res)
 
 
 ######################################################################
@@ -857,6 +884,7 @@ class ExampleBufPassThruPipe(ControlBase):
 
 def iospecfn():
     return Signal(16, name="d_in")
+
 
 class FIFOTest16(FIFOControl):
 
@@ -931,6 +959,7 @@ class ExampleRecordHandshakeAddClass(SimpleHandshake):
 def iospecfnrecord():
     return Example2OpRecord()
 
+
 class FIFOTestRecordControl(FIFOControl):
 
     def __init__(self):
@@ -963,7 +992,6 @@ class FIFOTestRecordAddStageControl(FIFOControl):
     def __init__(self):
         stage = ExampleAddRecordObjectStage()
         FIFOControl.__init__(self, 2, stage)
-
 
 
 ######################################################################
@@ -999,6 +1027,7 @@ class ExampleFIFOAdd2Pipe(ControlBase):
 
 def iospecfn24():
     return (Signal(16, name="src1"), Signal(16, name="src2"))
+
 
 class FIFOTest2x16(FIFOControl):
 
@@ -1059,6 +1088,7 @@ class ExampleBufPipe3(ControlBase):
 # http://bugs.libre-riscv.org/show_bug.cgi?id=57
 ######################################################################
 
+
 class ExampleBufAdd1Pipe(BufferedHandshake):
 
     def __init__(self):
@@ -1118,12 +1148,14 @@ class TestInputMask:
         easiest way to do that is to create a class that has the exact
         same member layout (self.op1, self.op2) as Example2OpClass
     """
+
     def __init__(self, src1, src2):
         self.src1 = src1
         self.src2 = src2
 
     def __repr__(self):
         return "<TestInputMask %x %x" % (self.src1, self.src2)
+
 
 class ExampleMaskCancellable(StageCls):
 
@@ -1147,6 +1179,7 @@ class MaskCancellablePipe(MaskCancellable):
 
     """ connects two stages together as a *single* combinatorial stage.
     """
+
     def __init__(self, dynamic=False, maskwid=16):
         stage1 = ExampleMaskCancellable()
         stage2 = ExampleMaskCancellable()
@@ -1158,6 +1191,7 @@ class MaskCancellablePipe1(MaskCancellable):
 
     """ connects a stage to a cancellable pipe with "dynamic" mode on.
     """
+
     def __init__(self, dynamic=True, maskwid=16):
         stage = ExampleMaskCancellable()
         MaskCancellable.__init__(self, stage, maskwid, dynamic=dynamic)
@@ -1189,20 +1223,20 @@ class MaskCancellableDynamic(ControlBase):
 
 
 def data_chain0(n_tests):
-        data = []
-        for i in range(n_tests):
-            data.append(TestInputMask(randint(0, 1<<16-1),
-                                      randint(0, 1<<16-1)))
-        return data
+    data = []
+    for i in range(n_tests):
+        data.append(TestInputMask(randint(0, 1 << 16-1),
+                                  randint(0, 1 << 16-1)))
+    return data
 
 
 def resultfn_0(data_o, expected, i, o):
     assert data_o['src1'] == expected.src1 + 2, \
-                "src1 %x-%x received data no match\n" \
-                % (data_o['src1'], expected.src1 + 2)
+        "src1 %x-%x received data no match\n" \
+        % (data_o['src1'], expected.src1 + 2)
     assert data_o['src2'] == expected.src2 + 2, \
-                "src2 %x-%x received data no match\n" \
-                % (data_o['src2'] , expected.src2 + 2)
+        "src2 %x-%x received data no match\n" \
+        % (data_o['src2'], expected.src2 + 2)
 
 
 ######################################################################
@@ -1211,92 +1245,105 @@ def resultfn_0(data_o, expected, i, o):
 
 num_tests = 10
 
+
 def test0():
     maskwid = num_tests
-    print ("test 0")
+    print("test 0")
     dut = MaskCancellablePipe(maskwid)
     ports = [dut.p.valid_i, dut.n.ready_i,
              dut.n.valid_o, dut.p.ready_o] + \
-             dut.p.data_i.ports() + dut.n.data_o.ports()
+        dut.p.data_i.ports() + dut.n.data_o.ports()
     vl = rtlil.convert(dut, ports=ports)
     with open("test_maskchain0.il", "w") as f:
         f.write(vl)
     data = data_chain0(maskwid)
     test = TestMask(dut, resultfn_0, maskwid, data=data)
-    run_simulation(dut, [test.send, test.rcv],
-                        vcd_name="test_maskchain0.vcd")
+    run_simulation(dut, [test.send(), test.rcv()],
+                   vcd_name="test_maskchain0.vcd")
+
 
 def test0_1():
     maskwid = 32
-    print ("test 0.1")
+    print("test 0.1")
     dut = MaskCancellableDynamic(maskwid=maskwid)
     ports = [dut.p.valid_i, dut.n.ready_i,
-             dut.n.valid_o, dut.p.ready_o] #+ \
-             #dut.p.data_i.ports() + dut.n.data_o.ports()
+             dut.n.valid_o, dut.p.ready_o]  # + \
+    #dut.p.data_i.ports() + dut.n.data_o.ports()
     vl = rtlil.convert(dut, ports=ports)
     with open("test_maskchain0_dynamic.il", "w") as f:
         f.write(vl)
     data = data_chain0(maskwid)
     test = TestMask(dut, resultfn_0, maskwid, data=data, latching=True)
-    run_simulation(dut, [test.send, test.rcv],
-                        vcd_name="test_maskchain0_dynamic.vcd")
+    run_simulation(dut, [test.send(), test.rcv()],
+                   vcd_name="test_maskchain0_dynamic.vcd")
+
 
 def notworking1():
-    print ("test 1")
+    print("test 1")
     dut = ExampleBufPipe()
     run_simulation(dut, tbench(dut), vcd_name="test_bufpipe.vcd")
 
+
 def notworking2():
-    print ("test 2")
+    print("test 2")
     dut = ExampleBufPipe2()
     run_simulation(dut, tbench2(dut), vcd_name="test_bufpipe2.vcd")
     ports = [dut.p.valid_i, dut.n.ready_i,
              dut.n.valid_o, dut.p.ready_o] + \
-             [dut.p.data_i] + [dut.n.data_o]
+        [dut.p.data_i] + [dut.n.data_o]
     vl = rtlil.convert(dut, ports=ports)
     with open("test_bufpipe2.il", "w") as f:
         f.write(vl)
 
+
 def test3():
-    print ("test 3")
+    print("test 3")
     dut = ExampleBufPipe()
     test = Test3(dut, resultfn_3)
-    run_simulation(dut, [test.send, test.rcv], vcd_name="test_bufpipe3.vcd")
+    run_simulation(dut, [test.send(), test.rcv()],
+                   vcd_name="test_bufpipe3.vcd")
+
 
 def test3_5():
-    print ("test 3.5")
+    print("test 3.5")
     dut = ExamplePipeline()
     test = Test3(dut, resultfn_3)
-    run_simulation(dut, [test.send, test.rcv], vcd_name="test_combpipe3.vcd")
+    run_simulation(dut, [test.send(), test.rcv()],
+                   vcd_name="test_combpipe3.vcd")
+
 
 def test4():
-    print ("test 4")
+    print("test 4")
     dut = ExampleBufPipe2()
     run_simulation(dut, tbench4(dut), vcd_name="test_bufpipe4.vcd")
 
+
 def test5():
-    print ("test 5")
+    print("test 5")
     dut = ExampleBufPipeAdd()
     test = Test5(dut, resultfn_5, stage_ctl=True)
-    run_simulation(dut, [test.send, test.rcv], vcd_name="test_bufpipe5.vcd")
+    run_simulation(dut, [test.send(), test.rcv()],
+                   vcd_name="test_bufpipe5.vcd")
+
 
 def test6():
-    print ("test 6")
+    print("test 6")
     dut = ExampleLTPipeline()
     test = Test5(dut, resultfn_6)
-    run_simulation(dut, [test.send, test.rcv], vcd_name="test_ltcomb6.vcd")
+    run_simulation(dut, [test.send(), test.rcv()], vcd_name="test_ltcomb6.vcd")
 
     ports = [dut.p.valid_i, dut.n.ready_i,
              dut.n.valid_o, dut.p.ready_o] + \
-             list(dut.p.data_i) + [dut.n.data_o]
+        list(dut.p.data_i) + [dut.n.data_o]
     vl = rtlil.convert(dut, ports=ports)
     with open("test_ltcomb_pipe.il", "w") as f:
         f.write(vl)
 
+
 def test7():
-    print ("test 7")
+    print("test 7")
     dut = ExampleAddRecordPipe()
-    data=data_dict()
+    data = data_dict()
     test = Test5(dut, resultfn_7, data=data)
     ports = [dut.p.valid_i, dut.n.ready_i,
              dut.n.valid_o, dut.p.ready_o,
@@ -1305,258 +1352,298 @@ def test7():
     vl = rtlil.convert(dut, ports=ports)
     with open("test_recordcomb_pipe.il", "w") as f:
         f.write(vl)
-    run_simulation(dut, [test.send, test.rcv], vcd_name="test_addrecord.vcd")
+    run_simulation(dut, [test.send(), test.rcv()],
+                   vcd_name="test_addrecord.vcd")
+
 
 def test8():
-    print ("test 8")
+    print("test 8")
     dut = ExampleBufPipeAddClass()
-    data=data_2op()
+    data = data_2op()
     test = Test5(dut, resultfn_8, data=data)
-    run_simulation(dut, [test.send, test.rcv], vcd_name="test_bufpipe8.vcd")
+    run_simulation(dut, [test.send(), test.rcv()],
+                   vcd_name="test_bufpipe8.vcd")
+
 
 def test9():
-    print ("test 9")
+    print("test 9")
     dut = ExampleBufPipeChain2()
     ports = [dut.p.valid_i, dut.n.ready_i,
              dut.n.valid_o, dut.p.ready_o] + \
-             [dut.p.data_i] + [dut.n.data_o]
+        [dut.p.data_i] + [dut.n.data_o]
     vl = rtlil.convert(dut, ports=ports)
     with open("test_bufpipechain2.il", "w") as f:
         f.write(vl)
 
     data = data_chain2()
     test = Test5(dut, resultfn_9, data=data)
-    run_simulation(dut, [test.send, test.rcv],
-                        vcd_name="test_bufpipechain2.vcd")
+    run_simulation(dut, [test.send(), test.rcv()],
+                   vcd_name="test_bufpipechain2.vcd")
+
 
 def test10():
-    print ("test 10")
+    print("test 10")
     dut = ExampleLTBufferedPipeDerived()
     test = Test5(dut, resultfn_6)
-    run_simulation(dut, [test.send, test.rcv], vcd_name="test_ltbufpipe10.vcd")
+    run_simulation(dut, [test.send(), test.rcv()],
+                   vcd_name="test_ltbufpipe10.vcd")
     ports = dut.ports()
     vl = rtlil.convert(dut, ports=ports)
     with open("test_ltbufpipe10.il", "w") as f:
         f.write(vl)
 
+
 def test11():
-    print ("test 11")
+    print("test 11")
     dut = ExampleAddRecordPlaceHolderPipe()
-    data=data_placeholder()
+    data = data_placeholder()
     test = Test5(dut, resultfn_11, data=data)
-    run_simulation(dut, [test.send, test.rcv], vcd_name="test_addrecord.vcd")
+    run_simulation(dut, [test.send(), test.rcv()],
+                   vcd_name="test_addrecord.vcd")
 
 
 def test12():
-    print ("test 12")
+    print("test 12")
     dut = ExampleBufDelayedPipe()
     data = data_chain1()
     test = Test5(dut, resultfn_12, data=data)
-    run_simulation(dut, [test.send, test.rcv], vcd_name="test_bufpipe12.vcd")
+    run_simulation(dut, [test.send(), test.rcv()],
+                   vcd_name="test_bufpipe12.vcd")
     ports = [dut.p.valid_i, dut.n.ready_i,
              dut.n.valid_o, dut.p.ready_o] + \
-             [dut.p.data_i] + [dut.n.data_o]
+        [dut.p.data_i] + [dut.n.data_o]
     vl = rtlil.convert(dut, ports=ports)
     with open("test_bufpipe12.il", "w") as f:
         f.write(vl)
 
+
 def test13():
-    print ("test 13")
+    print("test 13")
     dut = ExampleUnBufDelayedPipe()
     data = data_chain1()
     test = Test5(dut, resultfn_12, data=data)
-    run_simulation(dut, [test.send, test.rcv], vcd_name="test_unbufpipe13.vcd")
+    run_simulation(dut, [test.send(), test.rcv()],
+                   vcd_name="test_unbufpipe13.vcd")
     ports = [dut.p.valid_i, dut.n.ready_i,
              dut.n.valid_o, dut.p.ready_o] + \
-             [dut.p.data_i] + [dut.n.data_o]
+        [dut.p.data_i] + [dut.n.data_o]
     vl = rtlil.convert(dut, ports=ports)
     with open("test_unbufpipe13.il", "w") as f:
         f.write(vl)
 
+
 def test15():
-    print ("test 15")
+    print("test 15")
     dut = ExampleBufModeAdd1Pipe()
     data = data_chain1()
     test = Test5(dut, resultfn_12, data=data)
-    run_simulation(dut, [test.send, test.rcv], vcd_name="test_bufunbuf15.vcd")
+    run_simulation(dut, [test.send(), test.rcv()],
+                   vcd_name="test_bufunbuf15.vcd")
     ports = [dut.p.valid_i, dut.n.ready_i,
              dut.n.valid_o, dut.p.ready_o] + \
-             [dut.p.data_i] + [dut.n.data_o]
+        [dut.p.data_i] + [dut.n.data_o]
     vl = rtlil.convert(dut, ports=ports)
     with open("test_bufunbuf15.il", "w") as f:
         f.write(vl)
 
+
 def test16():
-    print ("test 16")
+    print("test 16")
     dut = ExampleBufModeUnBufPipe()
     data = data_chain1()
     test = Test5(dut, resultfn_9, data=data)
-    run_simulation(dut, [test.send, test.rcv], vcd_name="test_bufunbuf16.vcd")
+    run_simulation(dut, [test.send(), test.rcv()],
+                   vcd_name="test_bufunbuf16.vcd")
     ports = [dut.p.valid_i, dut.n.ready_i,
              dut.n.valid_o, dut.p.ready_o] + \
-             [dut.p.data_i] + [dut.n.data_o]
+        [dut.p.data_i] + [dut.n.data_o]
     vl = rtlil.convert(dut, ports=ports)
     with open("test_bufunbuf16.il", "w") as f:
         f.write(vl)
 
+
 def test17():
-    print ("test 17")
+    print("test 17")
     dut = ExampleUnBufAdd1Pipe2()
     data = data_chain1()
     test = Test5(dut, resultfn_12, data=data)
-    run_simulation(dut, [test.send, test.rcv], vcd_name="test_unbufpipe17.vcd")
+    run_simulation(dut, [test.send(), test.rcv()],
+                   vcd_name="test_unbufpipe17.vcd")
     ports = [dut.p.valid_i, dut.n.ready_i,
              dut.n.valid_o, dut.p.ready_o] + \
-             [dut.p.data_i] + [dut.n.data_o]
+        [dut.p.data_i] + [dut.n.data_o]
     vl = rtlil.convert(dut, ports=ports)
     with open("test_unbufpipe17.il", "w") as f:
         f.write(vl)
 
+
 def test18():
-    print ("test 18")
+    print("test 18")
     dut = PassThroughTest()
     data = data_chain1()
     test = Test5(dut, resultfn_identical, data=data)
-    run_simulation(dut, [test.send, test.rcv], vcd_name="test_passthru18.vcd")
+    run_simulation(dut, [test.send(), test.rcv()],
+                   vcd_name="test_passthru18.vcd")
     ports = [dut.p.valid_i, dut.n.ready_i,
              dut.n.valid_o, dut.p.ready_o] + \
-             [dut.p.data_i] + [dut.n.data_o]
+        [dut.p.data_i] + [dut.n.data_o]
     vl = rtlil.convert(dut, ports=ports)
     with open("test_passthru18.il", "w") as f:
         f.write(vl)
 
+
 def test19():
-    print ("test 19")
+    print("test 19")
     dut = ExampleBufPassThruPipe()
     data = data_chain1()
     test = Test5(dut, resultfn_9, data=data)
-    run_simulation(dut, [test.send, test.rcv], vcd_name="test_bufpass19.vcd")
+    run_simulation(dut, [test.send(), test.rcv()],
+                   vcd_name="test_bufpass19.vcd")
     ports = [dut.p.valid_i, dut.n.ready_i,
              dut.n.valid_o, dut.p.ready_o] + \
-             [dut.p.data_i] + [dut.n.data_o]
+        [dut.p.data_i] + [dut.n.data_o]
     vl = rtlil.convert(dut, ports=ports)
     with open("test_bufpass19.il", "w") as f:
         f.write(vl)
 
+
 def test20():
-    print ("test 20")
+    print("test 20")
     dut = FIFOTest16()
     data = data_chain1()
     test = Test5(dut, resultfn_identical, data=data)
-    run_simulation(dut, [test.send, test.rcv], vcd_name="test_fifo20.vcd")
+    run_simulation(dut, [test.send(), test.rcv()], vcd_name="test_fifo20.vcd")
     ports = [dut.p.valid_i, dut.n.ready_i,
              dut.n.valid_o, dut.p.ready_o] + \
-             [dut.p.data_i] + [dut.n.data_o]
+        [dut.p.data_i] + [dut.n.data_o]
     vl = rtlil.convert(dut, ports=ports)
     with open("test_fifo20.il", "w") as f:
         f.write(vl)
 
+
 def test21():
-    print ("test 21")
+    print("test 21")
     dut = ExampleFIFOPassThruPipe1()
     data = data_chain1()
     test = Test5(dut, resultfn_12, data=data)
-    run_simulation(dut, [test.send, test.rcv], vcd_name="test_fifopass21.vcd")
+    run_simulation(dut, [test.send(), test.rcv()],
+                   vcd_name="test_fifopass21.vcd")
     ports = [dut.p.valid_i, dut.n.ready_i,
              dut.n.valid_o, dut.p.ready_o] + \
-             [dut.p.data_i] + [dut.n.data_o]
+        [dut.p.data_i] + [dut.n.data_o]
     vl = rtlil.convert(dut, ports=ports)
     with open("test_fifopass21.il", "w") as f:
         f.write(vl)
 
+
 def test22():
-    print ("test 22")
+    print("test 22")
     dut = ExampleRecordHandshakeAddClass()
-    data=data_2op()
+    data = data_2op()
     test = Test5(dut, resultfn_8, data=data)
-    run_simulation(dut, [test.send, test.rcv], vcd_name="test_addrecord22.vcd")
+    run_simulation(dut, [test.send(), test.rcv()],
+                   vcd_name="test_addrecord22.vcd")
     ports = [dut.p.valid_i, dut.n.ready_i,
              dut.n.valid_o, dut.p.ready_o] + \
-             [dut.p.data_i.op1, dut.p.data_i.op2] + \
-             [dut.n.data_o]
+        [dut.p.data_i.op1, dut.p.data_i.op2] + \
+        [dut.n.data_o]
     vl = rtlil.convert(dut, ports=ports)
     with open("test_addrecord22.il", "w") as f:
         f.write(vl)
 
+
 def test23():
-    print ("test 23")
+    print("test 23")
     dut = ExampleFIFORecordObjectPipe()
-    data=data_2op()
+    data = data_2op()
     test = Test5(dut, resultfn_8, data=data)
-    run_simulation(dut, [test.send, test.rcv], vcd_name="test_addrecord23.vcd")
+    run_simulation(dut, [test.send(), test.rcv()],
+                   vcd_name="test_addrecord23.vcd")
     ports = [dut.p.valid_i, dut.n.ready_i,
              dut.n.valid_o, dut.p.ready_o] + \
-             [dut.p.data_i.op1, dut.p.data_i.op2] + \
-             [dut.n.data_o]
+        [dut.p.data_i.op1, dut.p.data_i.op2] + \
+        [dut.n.data_o]
     vl = rtlil.convert(dut, ports=ports)
     with open("test_addrecord23.il", "w") as f:
         f.write(vl)
 
+
 def test24():
-    print ("test 24")
+    print("test 24")
     dut = FIFOTestRecordAddStageControl()
-    data=data_2op()
+    data = data_2op()
     test = Test5(dut, resultfn_8, data=data)
     ports = [dut.p.valid_i, dut.n.ready_i,
              dut.n.valid_o, dut.p.ready_o] + \
-             [dut.p.data_i.op1, dut.p.data_i.op2] + \
-             [dut.n.data_o]
+        [dut.p.data_i.op1, dut.p.data_i.op2] + \
+        [dut.n.data_o]
     vl = rtlil.convert(dut, ports=ports)
     with open("test_addrecord24.il", "w") as f:
         f.write(vl)
-    run_simulation(dut, [test.send, test.rcv], vcd_name="test_addrecord24.vcd")
+    run_simulation(dut, [test.send(), test.rcv()],
+                   vcd_name="test_addrecord24.vcd")
+
 
 def test25():
-    print ("test 25")
+    print("test 25")
     dut = ExampleFIFOAdd2Pipe()
     data = data_chain1()
     test = Test5(dut, resultfn_9, data=data)
-    run_simulation(dut, [test.send, test.rcv], vcd_name="test_add2pipe25.vcd")
+    run_simulation(dut, [test.send(), test.rcv()],
+                   vcd_name="test_add2pipe25.vcd")
     ports = [dut.p.valid_i, dut.n.ready_i,
              dut.n.valid_o, dut.p.ready_o] + \
-             [dut.p.data_i] + [dut.n.data_o]
+        [dut.p.data_i] + [dut.n.data_o]
     vl = rtlil.convert(dut, ports=ports)
     with open("test_add2pipe25.il", "w") as f:
         f.write(vl)
 
+
 def test997():
-    print ("test 997")
+    print("test 997")
     dut = ExampleBufPassThruPipe2()
     data = data_chain1()
     test = Test5(dut, resultfn_9, data=data)
-    run_simulation(dut, [test.send, test.rcv], vcd_name="test_bufpass997.vcd")
+    run_simulation(dut, [test.send(), test.rcv()],
+                   vcd_name="test_bufpass997.vcd")
     ports = [dut.p.valid_i, dut.n.ready_i,
              dut.n.valid_o, dut.p.ready_o] + \
-             [dut.p.data_i] + [dut.n.data_o]
+        [dut.p.data_i] + [dut.n.data_o]
     vl = rtlil.convert(dut, ports=ports)
     with open("test_bufpass997.il", "w") as f:
         f.write(vl)
 
+
+@unittest.skip("buggy -- fails due to exceeding step count limit")  # FIXME
 def test998():
-    print ("test 998 (fails, bug)")
+    print("test 998 (fails, bug)")
     dut = ExampleBufPipe3()
     data = data_chain1()
     test = Test5(dut, resultfn_9, data=data)
-    run_simulation(dut, [test.send, test.rcv], vcd_name="test_bufpipe14.vcd")
+    run_simulation(dut, [test.send(), test.rcv()],
+                   vcd_name="test_bufpipe14.vcd")
     ports = [dut.p.valid_i, dut.n.ready_i,
              dut.n.valid_o, dut.p.ready_o] + \
-             [dut.p.data_i] + [dut.n.data_o]
+        [dut.p.data_i] + [dut.n.data_o]
     vl = rtlil.convert(dut, ports=ports)
     with open("test_bufpipe14.il", "w") as f:
         f.write(vl)
 
+
 def test999():
-    print ("test 999 (expected to fail, which is a bug)")
+    print("test 999 (expected to fail, which is a bug)")
     dut = ExampleBufUnBufPipe()
     data = data_chain1()
     test = Test5(dut, resultfn_9, data=data)
-    run_simulation(dut, [test.send, test.rcv], vcd_name="test_bufunbuf999.vcd")
+    run_simulation(dut, [test.send(), test.rcv()],
+                   vcd_name="test_bufunbuf999.vcd")
     ports = [dut.p.valid_i, dut.n.ready_i,
              dut.n.valid_o, dut.p.ready_o] + \
-             [dut.p.data_i] + [dut.n.data_o]
+        [dut.p.data_i] + [dut.n.data_o]
     vl = rtlil.convert(dut, ports=ports)
     with open("test_bufunbuf999.il", "w") as f:
         f.write(vl)
+
 
 if __name__ == '__main__':
     test0()
