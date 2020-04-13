@@ -94,7 +94,10 @@ class RecordObject(Record):
 
     def __iter__(self):
         for x in self.fields.values(): # remember: fields is an OrderedDict
-            if isinstance(x, Iterable):
+            if isinstance(x, Record):
+                for f in x.fields.values():
+                    yield f
+            elif isinstance(x, Iterable):
                 yield from x           # a bit like flatten (nmigen.tools)
             else:
                 yield x
@@ -189,7 +192,8 @@ class PrevControl(Elaboratable):
             yield self.stop_i
         if hasattr(self.data_i, "ports"):
             yield from self.data_i.ports()
-        elif isinstance(self.data_i, Sequence):
+        elif (isinstance(self.data_i, Sequence) or
+              isinstance(self.data_i, Iterable)):
             yield from self.data_i
         else:
             yield self.data_i
@@ -272,7 +276,8 @@ class NextControl(Elaboratable):
             yield self.stop_o
         if hasattr(self.data_o, "ports"):
             yield from self.data_o.ports()
-        elif isinstance(self.data_o, Sequence):
+        elif (isinstance(self.data_o, Sequence) or
+              isinstance(self.data_o, Iterable)):
             yield from self.data_o
         else:
             yield self.data_o
