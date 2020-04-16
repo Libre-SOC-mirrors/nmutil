@@ -23,6 +23,7 @@ from nmigen import Module, Signal, Cat, Elaboratable, Array, Const, Mux
 from nmigen.cli import verilog, rtlil
 import math
 
+
 class PriorityPicker(Elaboratable):
     """ implements a priority-picker.  input: N bits, output: N bits
     """
