@@ -75,13 +75,23 @@ class MultiPriorityPicker(Elaboratable):
 
         Also outputted (optional): an index for each picked "thing".
     """
-    def __init__(self, wid, levels, indices=False):
+    def __init__(self, wid, levels, indices=False, multiin=False):
         self.levels = levels
         self.wid = wid
         self.indices = indices
+        self.multiin = multiin
 
-        # only the one input, but multiple (single) bit outputs
-        self.i = Signal(self.wid, reset_less=True)
+
+        if multiin:
+            # multiple inputs, multiple outputs.
+            i_l = [] # array of picker outputs
+            for j in range(self.levels):
+                i = Signal(self.wid, name="i_%d" % j, reset_less=True)
+                i_l.append(i)
+            self.i = Array(i_l)
+        else:
+            # only the one input, but multiple (single) bit outputs
+            self.i = Signal(self.wid, reset_less=True)
 
         # create array of (single-bit) outputs (unary)
         o_l = [] # array of picker outputs
@@ -115,8 +125,11 @@ class MultiPriorityPicker(Elaboratable):
         prev_pp = None
         p_mask = None
         pp_l = []
-        i = self.i
         for j in range(self.levels):
+            if self.multiin:
+                i = self.i[j]
+            else:
+                i = self.i
             o = self.o[j]
             pp = PriorityPicker(self.wid)
             pp_l.append(pp)
@@ -159,7 +172,10 @@ class MultiPriorityPicker(Elaboratable):
         return m
 
     def __iter__(self):
-        yield self.i
+        if self.multiin:
+            yield from self.i
+        else:
+            yield self.i
         yield from self.o
         if not self.indices:
             return
@@ -179,7 +195,7 @@ if __name__ == '__main__':
     vl = rtlil.convert(dut, ports=dut.ports())
     with open("test_multi_picker.il", "w") as f:
         f.write(vl)
-    dut = MultiPriorityPicker(5, 4, False)
+    dut = MultiPriorityPicker(5, 4, False, True)
     vl = rtlil.convert(dut, ports=dut.ports())
     with open("test_multi_picker_noidx.il", "w") as f:
         f.write(vl)
