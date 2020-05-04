@@ -22,6 +22,15 @@ endmodule
 """
 
 def latchregister(m, incoming, outgoing, settrue, name=None):
+    """latchregister
+
+    based on a conditon, "settrue", incoming data will be "latched"
+    into a register and passed out on "outgoing".
+
+    * if "settrue" is ASSERTED, outgoing is COMBINATORIALLY equal to incoming
+    * on the same cycle that settrue is DEASSERTED, outgoing REMAINS
+      equal (indefinitely) to the incoming value
+    """
     # make reg same as input. reset OK.
     if isinstance(incoming, Record):
         reg = Record.like(incoming, name=name)
