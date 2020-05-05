@@ -103,15 +103,7 @@ class RecordObject(Record):
                 yield x
 
     def ports(self): # would be better being called "keys"
-        results = []
-        # If the record itself contains records, flatten them
-        for item in list(self):
-            ports_fun = getattr(item, "ports", None)
-            if callable(ports_fun):
-                results.extend(ports_fun())
-            else:
-                results.append(item)
-        return results
+        return list(self)
 
 
 class PrevControl(Elaboratable):
