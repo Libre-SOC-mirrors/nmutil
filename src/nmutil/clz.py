@@ -1,5 +1,7 @@
 from nmigen import Module, Signal, Elaboratable, Cat, Repl
 import math
+""" TODO: replace this module with PriorityEncoder
+"""
 
 class CLZ(Elaboratable):
     def __init__(self, width):
