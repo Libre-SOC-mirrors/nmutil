@@ -1,6 +1,8 @@
 from nmigen import Module, Signal, Elaboratable, Cat, Repl
 import math
-""" TODO: replace this module with PriorityEncoder
+""" This module is much more efficient than PriorityEncoder
+    although it is functionally identical.
+    see https://bugs.libre-soc.org/show_bug.cgi?id=326
 """
 
 class CLZ(Elaboratable):
@@ -48,8 +50,7 @@ class CLZ(Elaboratable):
                 left, lv = pairs[i+1]
                 right, rv = pairs[i]
                 width = right.width + 1
-                new_pair = Signal(width, name="cnt_%d_%d" %
-                                  (iteration, i))
+                new_pair = Signal(width, name="cnt_%d_%d" % (iteration, i))
                 if rv == lv:
                     with m.If(left[-1] == 1):
                         with m.If(right[-1] == 1):
@@ -63,7 +64,6 @@ class CLZ(Elaboratable):
                         comb += new_pair.eq(right + left)
                     with m.Else():
                         comb += new_pair.eq(left)
-
 
                 ret.append((new_pair, lv+rv))
         return ret
@@ -81,5 +81,4 @@ class CLZ(Elaboratable):
         comb += self.lz.eq(pairs[0][0])
 
         return m
-
 
