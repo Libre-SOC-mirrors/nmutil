@@ -24,4 +24,5 @@ def treereduce(tree, op, fn):
     if len(tree) == 2:
         return op(fn(tree[0]), fn(tree[1]))
     s = len(tree) // 2 # splitpoint
-    return treereduce(op(tree[:s], op, fn), treereduce(tree[s:], op, fn))
+    return op(treereduce(tree[:s], op, fn),
+              treereduce(tree[s:], op, fn))
