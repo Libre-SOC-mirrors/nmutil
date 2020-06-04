@@ -1,6 +1,6 @@
 from nmigen import Module, Signal, Elaboratable, Mux, Const
 from nmigen.asserts import Assert, AnyConst, Assume
-from nmigen.test.utils import FHDLTestCase
+from nmutil.formaltest import FHDLTestCase
 from nmigen.cli import rtlil
 
 from nmutil.clz import CLZ
