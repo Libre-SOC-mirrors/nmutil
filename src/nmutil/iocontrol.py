@@ -73,15 +73,33 @@ class Object:
         return list(self)
 
 
+def add_prefix_to_record_signals(prefix, record):
+    for key, val in record.fields.items():
+        if isinstance(val, Signal):
+            val.name = prefix + val.name
+        elif isinstance(val, Record):
+            add_prefix_to_record_signals(prefix, val)
+
 class RecordObject(Record):
     def __init__(self, layout=None, name=None):
         Record.__init__(self, layout=layout or [], name=name)
 
     def __setattr__(self, k, v):
+        print(f"RecordObject setattr({k}, {v})")
         #print (dir(Record))
         if (k.startswith('_') or k in ["fields", "name", "src_loc"] or
            k in dir(Record) or "fields" not in self.__dict__):
             return object.__setattr__(self, k, v)
+
+        # Prefix the signal name with the name of the recordobject
+        if isinstance(v, Signal):
+            v.name = self.name + "_" + v.name
+        elif isinstance(v, Record):
+            add_prefix_to_record_signals(self.name + "_", v)
+            print(f"Record: {v}")
+            print(v)
+
+
         self.fields[k] = v
         #print ("RecordObject setattr", k, v)
         if isinstance(v, Record):
