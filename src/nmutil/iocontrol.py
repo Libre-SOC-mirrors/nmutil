@@ -74,11 +74,14 @@ class Object:
 
 
 def add_prefix_to_record_signals(prefix, record):
+    """recursively hunt through Records, modifying names to add a prefix
+    """
     for key, val in record.fields.items():
         if isinstance(val, Signal):
             val.name = prefix + val.name
         elif isinstance(val, Record):
             add_prefix_to_record_signals(prefix, val)
+
 
 class RecordObject(Record):
     def __init__(self, layout=None, name=None):
