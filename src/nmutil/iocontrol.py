@@ -88,7 +88,7 @@ class RecordObject(Record):
         Record.__init__(self, layout=layout or [], name=name)
 
     def __setattr__(self, k, v):
-        print(f"RecordObject setattr({k}, {v})")
+        #print(f"RecordObject setattr({k}, {v})")
         #print (dir(Record))
         if (k.startswith('_') or k in ["fields", "name", "src_loc"] or
            k in dir(Record) or "fields" not in self.__dict__):
@@ -99,8 +99,6 @@ class RecordObject(Record):
             v.name = self.name + "_" + v.name
         elif isinstance(v, Record):
             add_prefix_to_record_signals(self.name + "_", v)
-            print(f"Record: {v}")
-            print(v)
 
 
         self.fields[k] = v
