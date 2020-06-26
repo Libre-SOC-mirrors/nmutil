@@ -23,6 +23,7 @@
 from nmigen import Signal, Cat, Const, Module, Value, Elaboratable
 from nmigen.cli import verilog, rtlil
 from nmigen.hdl.rec import Record
+from nmigen import tracer
 
 from collections.abc import Sequence, Iterable
 from collections import OrderedDict
@@ -85,7 +86,10 @@ def add_prefix_to_record_signals(prefix, record):
 
 class RecordObject(Record):
     def __init__(self, layout=None, name=None):
+        #if name is None:
+        #    name = tracer.get_var_name(depth=2, default="$ro")
         Record.__init__(self, layout=layout or [], name=name)
+
 
     def __setattr__(self, k, v):
         #print(f"RecordObject setattr({k}, {v})")
@@ -94,12 +98,16 @@ class RecordObject(Record):
            k in dir(Record) or "fields" not in self.__dict__):
             return object.__setattr__(self, k, v)
 
+        if self.name is None:
+            prefix = ""
+        else:
+            prefix = self.name + "_"
         # Prefix the signal name with the name of the recordobject
         if isinstance(v, Signal):
-            v.name = self.name + "_" + v.name
+            print (self, self.name, v.name)
+            v.name = prefix + v.name
         elif isinstance(v, Record):
             add_prefix_to_record_signals(self.name + "_", v)
-
 
         self.fields[k] = v
         #print ("RecordObject setattr", k, v)
