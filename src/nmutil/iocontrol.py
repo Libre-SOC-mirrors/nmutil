@@ -107,7 +107,7 @@ class RecordObject(Record):
             print (self, self.name, v.name)
             v.name = prefix + v.name
         elif isinstance(v, Record):
-            add_prefix_to_record_signals(self.name + "_", v)
+            add_prefix_to_record_signals(prefix, v)
 
         self.fields[k] = v
         #print ("RecordObject setattr", k, v)
