@@ -1,6 +1,6 @@
 from nmigen.compat.sim import run_simulation
 from nmigen.cli import verilog, rtlil
-from nmigen import Record, Signal, Module, Const, Elaboratable
+from nmigen import Record, Signal, Module, Const, Elaboratable, Mux
 
 """ jk latch
 
@@ -21,6 +21,7 @@ always @ (posedge c)
 endmodule
 """
 
+
 def latchregister(m, incoming, outgoing, settrue, name=None):
     """latchregister
 
@@ -36,16 +37,16 @@ def latchregister(m, incoming, outgoing, settrue, name=None):
         reg = Record.like(incoming, name=name)
     else:
         reg = Signal.like(incoming, name=name)
+    m.d.comb += outgoing.eq(Mux(settrue, incoming, reg))
     with m.If(settrue): # pass in some kind of expression/condition here
         m.d.sync += reg.eq(incoming)      # latch input into register
-        m.d.comb += outgoing.eq(incoming) # return input (combinatorial)
-    with m.Else():
-        m.d.comb += outgoing.eq(reg) # return input (combinatorial)
+
 
 def mkname(prefix, suffix):
     if suffix is None:
         return prefix
     return "%s_%s" % (prefix, suffix)
+
 
 class SRLatch(Elaboratable):
     def __init__(self, sync=True, llen=1, name=None):
