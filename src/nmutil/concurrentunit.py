@@ -21,7 +21,7 @@ def num_bits(n):
     return int(log(n) / log(2))
 
 
-class FPADDInMuxPipe(PriorityCombMuxInPipe):
+class InMuxPipe(PriorityCombMuxInPipe):
     def __init__(self, num_rows, iospecfn, maskwid=0):
         self.num_rows = num_rows
         stage = PassThroughStage(iospecfn)
@@ -29,7 +29,7 @@ class FPADDInMuxPipe(PriorityCombMuxInPipe):
                                        maskwid=maskwid)
 
 
-class FPADDMuxOutPipe(CombMuxOutPipe):
+class MuxOutPipe(CombMuxOutPipe):
     def __init__(self, num_rows, iospecfn, maskwid=0):
         self.num_rows = num_rows
         stage = PassThroughStage(iospecfn)
@@ -45,16 +45,17 @@ class ReservationStations(Elaboratable):
         Requires: the addition of an "alu" object, from which ispec and ospec
         are taken, and inpipe and outpipe are connected to it
 
-        * fan-in on inputs (an array of FPADDBaseData: a,b,mid)
+        * fan-in on inputs (an array of BaseData: a,b,mid)
         * ALU pipeline
         * fan-out on outputs (an array of FPPackData: z,mid)
 
         Fan-in and Fan-out are combinatorial.
     """
-    def __init__(self, num_rows, maskwid=0):
+    def __init__(self, num_rows, maskwid=0, feedback_width=None):
         self.num_rows = nr = num_rows
-        self.inpipe = FPADDInMuxPipe(nr, self.i_specfn, maskwid)   # fan-in
-        self.outpipe = FPADDMuxOutPipe(nr, self.o_specfn, maskwid) # fan-out
+        self.feedback_width = feedback_width
+        self.inpipe = InMuxPipe(nr, self.i_specfn, maskwid)   # fan-in
+        self.outpipe = MuxOutPipe(nr, self.o_specfn, maskwid) # fan-out
 
         self.p = self.inpipe.p  # kinda annoying,
         self.n = self.outpipe.n # use pipe in/out as this class in/out
@@ -68,6 +69,17 @@ class ReservationStations(Elaboratable):
 
         m.d.comb += self.inpipe.n.connect_to_next(self.alu.p)
         m.d.comb += self.alu.connect_to_next(self.outpipe)
+
+        if self.feedback_width is None:
+            return m
+
+        # connect all outputs above the feedback width back to their inputs
+        # (hence, feedback).  pipeline stages are then expected to *modify*
+        # the muxid (with care) in order to use the "upper numbered" RSes
+        # for storing partially-completed results.  micro-coding, basically
+
+        for i in range(self.feedback_width, self.num_rows):
+            self.outpipe.n[i].connect_to_next(self.inpipe.p[i])
 
         return m
 
