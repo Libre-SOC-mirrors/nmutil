@@ -9,16 +9,12 @@
     Records.
 """
 
-from nmigen import Signal, Cat, Const, Mux, Module, Value, Elaboratable
-from nmigen.cli import verilog, rtlil
-from nmigen.lib.fifo import SyncFIFO, SyncFIFOBuffered
+from nmigen import Signal, Cat, Value
 from nmigen.hdl.ast import ArrayProxy
 from nmigen.hdl.rec import Record, Layout
 
 from abc import ABCMeta, abstractmethod
 from collections.abc import Sequence, Iterable
-from collections import OrderedDict
-from nmutil.queue import Queue
 import inspect
 
 

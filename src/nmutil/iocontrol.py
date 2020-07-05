@@ -121,7 +121,9 @@ class RecordObject(Record):
 
     def __iter__(self):
         for x in self.fields.values(): # remember: fields is an OrderedDict
-            if isinstance(x, Record):
+            if hasattr(x, 'ports'):
+                yield from x.ports()
+            elif isinstance(x, Record):
                 for f in x.fields.values():
                     yield f
             elif isinstance(x, Iterable):
