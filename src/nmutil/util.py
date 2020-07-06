@@ -26,3 +26,10 @@ def treereduce(tree, op, fn):
     s = len(tree) // 2 # splitpoint
     return op(treereduce(tree[:s], op, fn),
               treereduce(tree[s:], op, fn))
+
+# chooses assignment of 32 bit or full 64 bit depending on is_32bit
+def eq32(is_32bit, dest, src):
+    return [dest[0:32].eq(src[0:32]),
+            dest[32:64].eq(Mux(is_32bit, 0, src[32:64]))]
+
+
