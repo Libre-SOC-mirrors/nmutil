@@ -1,4 +1,5 @@
 from collections.abc import Iterable
+from nmigen import Mux
 
 # XXX this already exists in nmigen._utils
 # see https://bugs.libre-soc.org/show_bug.cgi?id=297
