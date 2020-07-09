@@ -15,6 +15,8 @@ def trunc_div(n, d):
 # this is a POWER ISA 3.0B compatible mod / remainder function
 # however it is also the c, c++, rust, java *and* x86 way of doing things
 def trunc_rem(n, d):
-    return n - d * trunc_div(n, d)
+    m = d * trunc_div(n, d)
+    m.bits = n.bits # cheat - really shouldn't do this. mul returns full length
+    return n - m
 
 
