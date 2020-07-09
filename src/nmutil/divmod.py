@@ -3,8 +3,11 @@
 def trunc_div(n, d):
     abs_n = abs(n)
     abs_d = abs(d)
-    abs_q = n // d
-    if (n < 0) == (d < 0):
+    abs_q = abs_n // abs_d
+    #print ("trunc_div", n.value, d.value,
+    #                    abs_n.value, abs_d.value, abs_q.value,
+    #                    n == abs_n, d == abs_d)
+    if (n == abs_n) == (d == abs_d):
         return abs_q
     return -abs_q
 
