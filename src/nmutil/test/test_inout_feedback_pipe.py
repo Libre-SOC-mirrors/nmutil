@@ -16,7 +16,7 @@ from nmutil.multipipe import CombMultiOutPipeline, CombMuxOutPipe
 from nmutil.multipipe import PriorityCombMuxInPipe
 from nmutil.singlepipe import MaskCancellable, RecordObject, Object
 
-from . import StepLimiter
+from nmutil.test import StepLimiter
 import unittest
 
 
