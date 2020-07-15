@@ -43,6 +43,16 @@ class PipeContext:
         ret.append(self.op.eq(i.op))
         return ret
 
+    def __iter__(self):
+        yield self.muxid
+        yield self.op
+
+    def ports(self):
+        if hasattr(self.op, "ports"):
+            return [self.muxid] + self.op.ports()
+        else:
+            return list(self)
+
 
 class InMuxPipe(PriorityCombMuxInPipe):
     def __init__(self, num_rows, iospecfn, maskwid=0):
