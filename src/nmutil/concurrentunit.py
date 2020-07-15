@@ -20,6 +20,29 @@ from nmutil.multipipe import PriorityCombMuxInPipe
 def num_bits(n):
     return int(log(n) / log(2))
 
+class PipeContext:
+
+    def __init__(self, pspec):
+        """ creates a pipeline context.  currently: operator (op) and muxid
+
+            opkls (within pspec) - the class to create that will be the
+                                   "operator". instance must have an "eq"
+                                   function.
+        """
+        self.id_wid = pspec.id_wid
+        self.op_wid = pspec.op_wid
+        self.muxid = Signal(self.id_wid, reset_less=True)   # RS multiplex ID
+        opkls = pspec.opkls
+        if opkls is None:
+            self.op = Signal(self.op_wid, reset_less=True)
+        else:
+            self.op = opkls(pspec)
+
+    def eq(self, i):
+        ret = [self.muxid.eq(i.muxid)]
+        ret.append(self.op.eq(i.op))
+        return ret
+
 
 class InMuxPipe(PriorityCombMuxInPipe):
     def __init__(self, num_rows, iospecfn, maskwid=0):
