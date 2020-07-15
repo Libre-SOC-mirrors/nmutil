@@ -9,7 +9,7 @@
 """
 
 from math import log
-from nmigen import Module, Elaboratable
+from nmigen import Module, Elaboratable, Signal
 from nmigen.cli import main, verilog
 
 from nmutil.singlepipe import PassThroughStage
