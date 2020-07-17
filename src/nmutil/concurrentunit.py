@@ -10,6 +10,7 @@
 
 from math import log
 from nmigen import Module, Elaboratable, Signal
+from nmigen.asserts import Assert
 from nmigen.cli import main, verilog
 
 from nmutil.singlepipe import PassThroughStage
@@ -41,7 +42,19 @@ class PipeContext:
     def eq(self, i):
         ret = [self.muxid.eq(i.muxid)]
         ret.append(self.op.eq(i.op))
+        # don't forget to update matches if you add fields later.
         return ret
+
+    def matches(self, another):
+        """
+        Returns a list of Assert()s validating that this context
+        matches the other context.
+        """
+        # I couldn't figure a clean way of overloading the == operator.
+        return [
+            Assert(self.muxid == another.muxid),
+            Assert(self.op == another.op),
+        ]
 
     def __iter__(self):
         yield self.muxid
