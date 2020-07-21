@@ -59,6 +59,7 @@ class PriorityPicker(Elaboratable):
     def __iter__(self):
         yield self.i
         yield self.o
+        yield self.en_o
 
     def ports(self):
         return list(self)
