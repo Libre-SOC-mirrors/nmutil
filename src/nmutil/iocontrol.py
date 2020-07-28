@@ -104,7 +104,7 @@ class RecordObject(Record):
             prefix = self.name + "_"
         # Prefix the signal name with the name of the recordobject
         if isinstance(v, Signal):
-            print (self, self.name, v.name)
+            #print (self, self.name, v.name)
             v.name = prefix + v.name
         elif isinstance(v, Record):
             add_prefix_to_record_signals(prefix, v)
@@ -272,7 +272,8 @@ class NextControl(Elaboratable):
                 res.append(nxt.stop_i.eq(self.stop_o))
         if do_data:
             res.append(nmoperator.eq(nxt.data_i, self.data_o))
-        print ("connect to next", self, self.maskwid, nxt.data_i, do_data, do_stop)
+        print ("connect to next", self, self.maskwid, nxt.data_i,
+                                  do_data, do_stop)
         return res
 
     def _connect_out(self, nxt, direct=False, fn=None,
