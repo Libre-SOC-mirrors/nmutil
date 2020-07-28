@@ -34,3 +34,15 @@ def eq32(is_32bit, dest, src):
             dest[32:64].eq(Mux(is_32bit, 0, src[32:64]))]
 
 
+# a wrapper function formerly in run_simulation that is still useful.
+# Simulation.add_sync_process now only takes functions, it does not
+# take generators.  so passing in arguments is no longer possible.
+# with this wrapper, the following is possible:
+#       sim.add_sync_process(wrap.dut(parallel_sender_number=0))
+#       sim.add_sync_process(wrap.dut(parallel_sender_number=1))
+
+def wrap(process):
+    def wrapper():
+        yield from process
+    return wrapper
+
