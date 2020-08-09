@@ -1,5 +1,5 @@
 from collections.abc import Iterable
-from nmigen import Mux
+from nmigen import Mux, Signal
 
 # XXX this already exists in nmigen._utils
 # see https://bugs.libre-soc.org/show_bug.cgi?id=297
@@ -45,4 +45,16 @@ def wrap(process):
     def wrapper():
         yield from process
     return wrapper
+
+
+# a "rising edge" generator.  can take signals of greater than width 1
+
+def rising_edge(m, sig):
+    delay = Signal.like(sig)
+    rising = Signal.like(sig)
+    delay.name = "%s_dly" % sig.name
+    rising.name = "%s_rise" % sig.name
+    m.d.sync += delay.eq(sig) # 1 clock delay
+    m.d.comb += rising.eq(sig & ~delay) # sig is hi but delay-sig is lo
+    return rising
 
