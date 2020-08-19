@@ -5,7 +5,7 @@ from nmigen.utils import log2_int
 class Mask(Elaboratable):
     def __init__(self, sz):
         self.sz = sz
-        self.shift = Signal(log2_int(sz, False))
+        self.shift = Signal(log2_int(sz, False)+1)
         self.mask = Signal(sz)
 
     def elaborate(self, platform):
