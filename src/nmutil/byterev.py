@@ -1,4 +1,4 @@
-from nmigen import Signal
+from nmigen import Signal, Cat
 
 # TODO: turn this into a module
 def byte_reverse(m, name, data, length):
@@ -12,19 +12,20 @@ def byte_reverse(m, name, data, length):
 
     if isinstance(length, int):
         j = length
+        rev = []
         for i in range(j):
             dest = data_r.word_select(i, 8)
-            src = data.word_select(j-1-i, 8)
-            comb += dest.eq(src)
+            res.append(data.word_select(j-1-i, 8))
+        comb += data_r.eq(Cat(*rev))
         return data_r
 
     with m.Switch(length):
         for j in [1,2,4,8]:
             with m.Case(j):
+                rev = []
                 for i in range(j):
-                    dest = data_r.word_select(i, 8)
-                    src = data.word_select(j-1-i, 8)
-                    comb += dest.eq(src)
+                    rev.append(data.word_select(j-1-i, 8))
+                comb += data_r.eq(Cat(*rev))
     return data_r
 
 
