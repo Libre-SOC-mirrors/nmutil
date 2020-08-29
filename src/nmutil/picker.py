@@ -26,10 +26,17 @@ import math
 
 class PriorityPicker(Elaboratable):
     """ implements a priority-picker.  input: N bits, output: N bits
+
+        * lsb_mode is for a LSB-priority picker
+        * reverse_i=True is for convenient reverseal of the input bits
+        * reverse_o=True is for convenient reversal of the output bits
     """
-    def __init__(self, wid):
+    def __init__(self, wid, lsb_mode=False, reverse_i=False, reverse_o=False):
         self.wid = wid
         # inputs
+        self.lsb_mode = lsb_mode
+        self.reverse_i = reverse_i
+        self.reverse_o = reverse_o
         self.i = Signal(wid, reset_less=True)
         self.o = Signal(wid, reset_less=True)
         self.en_o = Signal(reset_less=True) # true if any output is true
@@ -40,15 +47,22 @@ class PriorityPicker(Elaboratable):
         # works by saying, "if all previous bits were zero, we get a chance"
         res = []
         ni = Signal(self.wid, reset_less = True)
-        m.d.comb += ni.eq(~self.i)
-        for i in range(0, self.wid):
-            t = Signal(name="t%d" % i, reset_less = True)
+        i = list(self.i)
+        if self.reverse_i:
+            i.reverse()
+        m.d.comb += ni.eq(~Cat(*i))
+        prange = list(range(0, self.wid))
+        if self.lsb_mode:
+            prange.reverse()
+        for n in prange:
+            t = Signal(name="t%d" % n, reset_less = True)
             res.append(t)
-            if i == 0:
-                m.d.comb += t.eq(self.i[i])
+            if n == 0:
+                m.d.comb += t.eq(i[n])
             else:
-                m.d.comb += t.eq(~Cat(ni[i], *self.i[:i]).bool())
-
+                m.d.comb += t.eq(~Cat(ni[n], *i[:n]).bool())
+        if self.reverse_o:
+            res.reverse()
         # we like Cat(*xxx).  turn lists into concatenated bits
         m.d.comb += self.o.eq(Cat(*res))
         # useful "is any output enabled" signal
