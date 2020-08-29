@@ -8,4 +8,4 @@ http://bugs.libre-riscv.org/show_bug.cgi?id=62
 
 * nmigen
 * yosys (latest git repository, required by nmigen)
-
+* pyvcd (for stylish GTKWave documents) - available on Pypi

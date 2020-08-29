@@ -8,6 +8,7 @@ NEWS = open(os.path.join(here, 'NEWS.txt')).read()
 version = '0.0.1'
 
 install_requires = [
+    'pyvcd',  # for stylish GTKWave documents - available on Pypi
 ]
 
 test_requires = [
