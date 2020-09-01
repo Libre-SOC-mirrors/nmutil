@@ -4,72 +4,44 @@ from nmigen import Elaboratable, Signal, Module, Cat
 from nmigen.back.pysim import Simulator
 from nmigen.cli import rtlil
 from math import log2
-from nmutil.iocontrol import PrevControl, NextControl
-
-from soc.fu.base_input_record import CompOpSubsetBase
 
 from vcd.gtkw import GTKWSave, GTKWColor
 from nmutil.gtkw import write_gtkw
 
 
-class CompFSMOpSubset(CompOpSubsetBase):
-    def __init__(self, name=None):
-        layout = (('sdir', 1),
-                  )
-
-        super().__init__(layout, name=name)
-
-
-
-class Dummy:
-    pass
-
-
 class Shifter(Elaboratable):
     """Simple sequential shifter
 
-    * p.data_i.data:  value to be shifted
+    * "Prev" port:
 
-    * p.data_i.shift: shift amount
+        * ``p_data_i``: value to be shifted
 
-    * op.sdir:       shift direction (0 = left, 1 = right)
+        * ``p_shift_i``: shift amount
 
-    * n.data_o.data: shifted value
+        * ``op__sdir``: shift direction (0 = left, 1 = right)
+
+        * ``p_valid_i`` and ``p_ready_o``: handshake
+
+    * "Next" port:
+
+        * ``n_data_o``: shifted value
+
+        * ``n_valid_o`` and ``n_ready_i``: handshake
     """
-    class PrevData:
-        def __init__(self, width):
-            self.data = Signal(width, name="p_data_i")
-            self.shift = Signal(width, name="p_shift_i")
-            self.ctx = Dummy() # comply with CompALU API
-
-        def _get_data(self):
-            return [self.data, self.shift]
-
-    class NextData:
-        def __init__(self, width):
-            self.data = Signal(width, name="n_data_o")
-
-        def _get_data(self):
-            return [self.data]
-
     def __init__(self, width):
         self.width = width
-        self.p = PrevControl()
-        self.n = NextControl()
-        self.p.data_i = Shifter.PrevData(width)
-        self.n.data_o = Shifter.NextData(width)
+        """data width"""
+        self.p_data_i = Signal(width)
+        self.p_shift_i = Signal(width)
+        self.op__sdir = Signal()
+        self.p_valid_i = Signal()
+        self.p_ready_o = Signal()
+        self.n_data_o = Signal(width)
+        self.n_valid_o = Signal()
+        self.n_ready_i = Signal()
 
-        # more pieces to make this example class comply with the CompALU API
-        self.op = CompFSMOpSubset(name="op")
-        self.p.data_i.ctx.op = self.op
-        self.i = self.p.data_i._get_data()
-        self.out = self.n.data_o._get_data()
-
-    def elaborate(self, platform):
+    def elaborate(self, _):
         m = Module()
-
-        m.submodules.p = self.p
-        m.submodules.n = self.n
 
         # the control signals
         load = Signal()
@@ -85,8 +57,8 @@ class Shifter(Elaboratable):
         # build the data flow
         m.d.comb += [
             # connect input and output
-            shift_in.eq(self.p.data_i.data),
-            self.n.data_o.data.eq(shift_reg),
+            shift_in.eq(self.p_data_i),
+            self.n_data_o.eq(shift_reg),
             # generate shifted views of the register
             shift_left_by_1.eq(Cat(0, shift_reg[:-1])),
             shift_right_by_1.eq(Cat(shift_reg[1:], 0)),
@@ -116,14 +88,14 @@ class Shifter(Elaboratable):
             with m.State("IDLE"):
                 m.d.comb += [
                     # keep p.ready_o active on IDLE
-                    self.p.ready_o.eq(1),
+                    self.p_ready_o.eq(1),
                     # keep loading the shift register and shift count
                     load.eq(1),
-                    next_count.eq(self.p.data_i.shift),
+                    next_count.eq(self.p_shift_i),
                 ]
                 # capture the direction bit as well
-                m.d.sync += direction.eq(self.op.sdir)
-                with m.If(self.p.valid_i):
+                m.d.sync += direction.eq(self.op__sdir)
+                with m.If(self.p_valid_i):
                     # Leave IDLE when data arrives
                     with m.If(next_count == 0):
                         # short-circuit for zero shift
@@ -141,23 +113,23 @@ class Shifter(Elaboratable):
                     # exit when shift counter goes to zero
                     m.next = "DONE"
             with m.State("DONE"):
-                # keep n.valid_o active while the data is not accepted
-                m.d.comb += self.n.valid_o.eq(1)
-                with m.If(self.n.ready_i):
+                # keep n_valid_o active while the data is not accepted
+                m.d.comb += self.n_valid_o.eq(1)
+                with m.If(self.n_ready_i):
                     # go back to IDLE when the data is accepted
                     m.next = "IDLE"
 
         return m
 
     def __iter__(self):
-        yield self.op.sdir
-        yield self.p.data_i.data
-        yield self.p.data_i.shift
-        yield self.p.valid_i
-        yield self.p.ready_o
-        yield self.n.ready_i
-        yield self.n.valid_o
-        yield self.n.data_o.data
+        yield self.op__sdir
+        yield self.p_data_i
+        yield self.p_shift_i
+        yield self.p_valid_i
+        yield self.p_ready_o
+        yield self.n_ready_i
+        yield self.n_valid_o
+        yield self.n_data_o
 
     def ports(self):
         return list(self)
@@ -306,13 +278,13 @@ def test_shifter():
 
     def send(data, shift, direction):
         # present input data and assert valid_i
-        yield dut.p.data_i.data.eq(data)
-        yield dut.p.data_i.shift.eq(shift)
-        yield dut.op.sdir.eq(direction)
-        yield dut.p.valid_i.eq(1)
+        yield dut.p_data_i.eq(data)
+        yield dut.p_shift_i.eq(shift)
+        yield dut.op__sdir.eq(direction)
+        yield dut.p_valid_i.eq(1)
         yield
         # wait for p.ready_o to be asserted
-        while not (yield dut.p.ready_o):
+        while not (yield dut.p_ready_o):
             yield
         # show current operation operation
         if direction:
@@ -324,22 +296,22 @@ def test_shifter():
         yield msg.eq(0)
         yield msg.eq(1)
         # clear input data and negate p.valid_i
-        yield dut.p.valid_i.eq(0)
-        yield dut.p.data_i.data.eq(0)
-        yield dut.p.data_i.shift.eq(0)
-        yield dut.op.sdir.eq(0)
+        yield dut.p_valid_i.eq(0)
+        yield dut.p_data_i.eq(0)
+        yield dut.p_shift_i.eq(0)
+        yield dut.op__sdir.eq(0)
 
     def receive(expected):
         # signal readiness to receive data
-        yield dut.n.ready_i.eq(1)
+        yield dut.n_ready_i.eq(1)
         yield
         # wait for n.valid_o to be asserted
-        while not (yield dut.n.valid_o):
+        while not (yield dut.n_valid_o):
             yield
         # read result
-        result = yield dut.n.data_o.data
+        result = yield dut.n_data_o
         # negate n.ready_i
-        yield dut.n.ready_i.eq(0)
+        yield dut.n_ready_i.eq(0)
         # check result
         assert result == expected
         # finish displaying the current operation
