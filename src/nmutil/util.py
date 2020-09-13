@@ -58,3 +58,15 @@ def rising_edge(m, sig):
     m.d.comb += rising.eq(sig & ~delay) # sig is hi but delay-sig is lo
     return rising
 
+
+# Display function (dummy if non-existent)
+# added as a patch from jeanthom
+# https://gist.githubusercontent.com/jeanthom/
+#           f97f5b928720d4adda9d295e8a5bc078/
+#           raw/694274e0aceec993c0fc127e296b1a85b93c1b89/nmigen-display.diff
+try:
+    from nmigen.hdl.ast import Display
+except ImportError:
+    def Display(*args):
+        return []
+
