@@ -15,7 +15,7 @@ def byte_reverse(m, name, data, length):
         rev = []
         for i in range(j):
             dest = data_r.word_select(i, 8)
-            res.append(data.word_select(j-1-i, 8))
+            rev.append(data.word_select(j-1-i, 8))
         comb += data_r.eq(Cat(*rev))
         return data_r
 
