@@ -62,8 +62,8 @@ class PLRU(Elaboratable):
                     shift = LOG_TLB - lvl
                     new_idx = Const(~((i >> (shift-1)) & 1), 1)
                     plru_idx = idx_base + (i >> shift)
-                    print("plru", i, lvl, hex(idx_base),
-                          plru_idx, shift, new_idx)
+                    #print("plru", i, lvl, hex(idx_base),
+                    #      plru_idx, shift, new_idx)
                     m.d.sync += plru_tree[plru_idx].eq(new_idx)
 
         # Decode tree to write enable signals
@@ -96,7 +96,7 @@ class PLRU(Elaboratable):
                     en.append(~plru)  # yes inverted (using bool() below)
                 else:
                     en.append(plru)  # yes inverted (using bool() below)
-            print("plru replace", i, en)
+            #print("plru replace", i, en)
             # boolean logic manipulation:
             # plru0 & plru1 & plru2 == ~(~plru0 | ~plru1 | ~plru2)
             replace.append(~Cat(*en).bool())
