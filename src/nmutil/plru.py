@@ -48,7 +48,7 @@ class PLRU(Elaboratable):
         # default: begin /* No hit */ end
         # endcase
 
-        LOG_TLB = log2_int(self.BITS)
+        LOG_TLB = log2_int(self.BITS, False)
         hit = Signal(self.BITS, reset_less=True)
         m.d.comb += hit.eq(Repl(self.acc_i, self.BITS) & self.acc_en)
 
@@ -90,13 +90,14 @@ class PLRU(Elaboratable):
                 new_idx = (i >> (shift-1)) & 1
                 plru_idx = idx_base + (i >> shift)
                 plru = Signal(reset_less=True,
-                              name="plru-%d-%d-%d" % (i, lvl, plru_idx))
+                              name="plru-%d-%d-%d-%d" % \
+                                    (i, lvl, plru_idx, new_idx))
                 m.d.comb += plru.eq(plru_tree[plru_idx])
                 if new_idx:
                     en.append(~plru)  # yes inverted (using bool() below)
                 else:
                     en.append(plru)  # yes inverted (using bool() below)
-            #print("plru replace", i, en)
+            #print("plru", i, en)
             # boolean logic manipulation:
             # plru0 & plru1 & plru2 == ~(~plru0 | ~plru1 | ~plru2)
             replace.append(~Cat(*en).bool())
@@ -109,7 +110,7 @@ class PLRU(Elaboratable):
 
 
 if __name__ == '__main__':
-    dut = PLRU(4)
+    dut = PLRU(8)
     vl = rtlil.convert(dut, ports=dut.ports())
     with open("test_plru.il", "w") as f:
         f.write(vl)
