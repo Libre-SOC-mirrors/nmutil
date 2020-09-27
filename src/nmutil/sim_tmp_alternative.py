@@ -53,12 +53,12 @@ def Simulator(*args, **kwargs):
 
 def is_engine_cxxsim():
     """Returns ``True`` if the selected engine is cxxsim"""
-    return nmigen_sim_environ_variable == "cxxsim"
+    return detected_new_api and nmigen_sim_environ_variable == "cxxsim"
 
 
 def is_engine_pysim():
     """Returns ``True`` if the selected engine is pysim"""
-    return nmigen_sim_environ_variable == "pysim"
+    return not detected_new_api or nmigen_sim_environ_variable == "pysim"
 
 
 nmigen_sim_top_module = "top." if is_engine_pysim() else ""
