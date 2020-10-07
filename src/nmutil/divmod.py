@@ -17,6 +17,9 @@ def trunc_divs(n, d):
     res = copy(n)
     if (sign_n == sign_d):
         res.value = abs_q
+        if res.value & (1 << (res.bits - 1)) != 0:
+            # result should be positive but is negative
+            raise OverflowError()
         return res
     mask = (1 << res.bits) - 1
     res.value = (-abs_q) & mask
