@@ -1,6 +1,5 @@
 from nmigen import Module, Signal
 from nmigen.back.pysim import Simulator, Delay
-from nmigen.test.utils import FHDLTestCase
 
 from nmutil.clz import CLZ
 import unittest
@@ -8,7 +7,7 @@ import math
 import random
 
 
-class CLZTestCase(FHDLTestCase):
+class CLZTestCase(unittest.TestCase):
     def run_test(self, inputs, width=8):
 
         m = Module()
