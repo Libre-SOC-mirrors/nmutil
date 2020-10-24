@@ -1,9 +1,10 @@
 from vcd.gtkw import GTKWSave, GTKWColor
+from math import log2
 
 
 def write_gtkw(gtkw_name, vcd_name, gtkw_dom, gtkw_style=None,
                module=None, loc=None, color=None, base=None,
-               zoom=-22.9, marker=-1):
+               zoom=None, marker=-1, clk_period=1e-6):
     """ Write a GTKWave document according to the supplied style and DOM.
 
     :param gtkw_name: name of the generated GTKWave document
@@ -16,6 +17,8 @@ def write_gtkw(gtkw_name, vcd_name, gtkw_dom, gtkw_style=None,
     :param loc: source code location to include as a comment
     :param zoom: initial zoom level, in GTKWave format
     :param marker: initial location of a marker
+    :param clk_period: clock period in seconds, helping
+                       to set a reasonable initial zoom level
 
     **gtkw_style format**
 
@@ -67,6 +70,8 @@ def write_gtkw(gtkw_name, vcd_name, gtkw_dom, gtkw_style=None,
         gtkw.dumpfile(vcd_name)
         # set a reasonable zoom level
         # also, move the marker to an interesting place
+        if zoom is None:
+            zoom = -42.8 - log2(clk_period)
         gtkw.zoom_markers(zoom, marker)
 
         # create an empty style, if needed
