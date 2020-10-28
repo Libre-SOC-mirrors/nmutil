@@ -28,16 +28,17 @@ or, even::
 import os
 
 try:
-    from nmigen.sim import Simulator as RealSimulator, Delay, Settle, Tick
+    from nmigen.sim import (Simulator as RealSimulator, Delay, Settle, Tick,
+                            Passive)
     detected_new_api = True
 except ImportError:
     detected_new_api = False
     try:
         from nmigen.sim.pysim import (Simulator as RealSimulator,
-                                      Delay, Settle, Tick)
+                                      Delay, Settle, Tick, Passive)
     except ImportError:
         from nmigen.back.pysim import (Simulator as RealSimulator,
-                                       Delay, Settle, Tick)
+                                       Delay, Settle, Tick, Passive)
 
 nmigen_sim_environ_variable = os.environ.get("NMIGEN_SIM_MODE") \
                               or "pysim"
