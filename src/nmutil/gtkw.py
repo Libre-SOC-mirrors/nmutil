@@ -145,12 +145,10 @@ def write_gtkw(gtkw_name, vcd_name, gtkw_dom, gtkw_style=None,
                     node_color = colors.get(node_style.get('color'))
                     node_base = node_style.get('base')
                     display = node_style.get('display')
-                    if 'bit' not in node_style:
-                        gtkw.trace(signal_name, color=node_color,
-                                   datafmt=node_base, alias=display)
-                    else:
+                    if 'bit' in node_style:
                         bit = node_style['bit']
-                        gtkw.trace_bit(bit, signal_name, color=node_color,
-                                       alias=display)
+                        signal_name = f'({bit}){signal_name}'
+                    gtkw.trace(signal_name, color=node_color,
+                               datafmt=node_base, alias=display)
 
         walk(gtkw_dom, root_style)
