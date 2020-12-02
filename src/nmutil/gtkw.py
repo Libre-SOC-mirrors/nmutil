@@ -4,7 +4,8 @@ from math import log2
 
 def write_gtkw(gtkw_name, vcd_name, gtkw_dom, gtkw_style=None,
                module=None, loc=None, color=None, base=None,
-               zoom=None, marker=-1, clk_period=1e-6):
+               zoom=None, marker=-1, clk_period=1e-6,
+               time_resolution_unit="ps"):
     """ Write a GTKWave document according to the supplied style and DOM.
 
     :param gtkw_name: name of the generated GTKWave document
@@ -18,7 +19,11 @@ def write_gtkw(gtkw_name, vcd_name, gtkw_dom, gtkw_style=None,
     :param zoom: initial zoom level, in GTKWave format
     :param marker: initial location of a marker
     :param clk_period: clock period in seconds, helping
-                       to set a reasonable initial zoom level
+                       to set a reasonable initial zoom level.
+                       Use together with ``time_resolution_unit``.
+    :param time_resolution_unit: use "ps" or "ns". Derived from the units of
+                                 the "timescale" on the VCD file. Used with
+                                 "clk_period" to set a default zoom level
 
     **gtkw_style format**
 
@@ -73,6 +78,9 @@ def write_gtkw(gtkw_name, vcd_name, gtkw_dom, gtkw_style=None,
         # also, move the marker to an interesting place
         if zoom is None:
             zoom = -42.8 - log2(clk_period)
+            # base zoom level is affected by time resolution units
+            if time_resolution_unit == "ns":
+                zoom = zoom + log2(1e3)
         gtkw.zoom_markers(zoom, marker)
 
         # create an empty style, if needed
