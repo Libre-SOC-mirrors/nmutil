@@ -29,7 +29,7 @@ setup(
     author='Luke Kenneth Casson Leighton',
     author_email='lkcl@libre-riscv.org',
     url='http://git.libre-riscv.org/?p=nmutil',
-    license='GPLv3+',
+    license='LGPLv3+',
     packages=find_packages('src'),
     package_dir = {'': 'src'},
     include_package_data=True,
