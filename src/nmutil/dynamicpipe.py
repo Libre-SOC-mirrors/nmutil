@@ -3,6 +3,8 @@
 
 """ Meta-class that allows a dynamic runtime parameter-selectable "mixin"
 
+    This work is funded through NLnet under Grant 2019-02-012
+
 The reasons why this technique is being deployed is because SimpleHandshake
 needs to be dynamically replaced at the end-users' choice, without having
 to duplicate dozens of classes using multiple-inheritanc "Mix-in" techniques.

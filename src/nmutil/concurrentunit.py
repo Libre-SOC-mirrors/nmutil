@@ -1,11 +1,20 @@
 """ concurrent unit from mitch alsup augmentations to 6600 scoreboard
 
+    This work is funded through NLnet under Grant 2019-02-012
+
+    License: LGPLv3+
+
+
     * data fans in
     * data goes through a pipeline
     * results fan back out.
 
     the output data format has to have a member "muxid", which is used
     as the array index on fan-out
+
+    Associated bugreports:
+
+    * https://bugs.libre-soc.org/show_bug.cgi?id=538
 """
 
 from math import log
@@ -20,6 +29,7 @@ from nmutil.multipipe import PriorityCombMuxInPipe
 
 def num_bits(n):
     return int(log(n) / log(2))
+
 
 class PipeContext:
 

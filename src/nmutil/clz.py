@@ -3,6 +3,11 @@ import math
 """ This module is much more efficient than PriorityEncoder
     although it is functionally identical.
     see https://bugs.libre-soc.org/show_bug.cgi?id=326
+
+    This work is funded through NLnet under Grant 2019-02-012
+
+    License: LGPLv3+
+
 """
 
 class CLZ(Elaboratable):

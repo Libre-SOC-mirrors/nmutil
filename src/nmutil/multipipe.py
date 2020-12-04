@@ -1,6 +1,10 @@
 """ Combinatorial Multi-input and Multi-output multiplexer blocks
     conforming to Pipeline API
 
+    This work is funded through NLnet under Grant 2019-02-012
+
+    License: LGPLv3+
+
     Multi-input is complex because if any one input is ready, the output
     can be ready, and the decision comes from a separate module.
 
@@ -8,6 +12,8 @@
     and the selection is just a mux.  The only proviso (difference) being:
     the outputs not being selected have to have their ready_o signals
     DEASSERTED.
+
+    https://bugs.libre-soc.org/show_bug.cgi?id=538
 """
 
 from math import log

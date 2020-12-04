@@ -1,3 +1,11 @@
+"""
+    This work is funded through NLnet under Grant 2019-02-012
+
+    License: LGPLv3+
+
+
+"""
+
 from copy import copy
 # this is a POWER ISA 3.0B compatible *signed* div function
 # however it is also the c, c++, rust, java *and* x86 way of doing things

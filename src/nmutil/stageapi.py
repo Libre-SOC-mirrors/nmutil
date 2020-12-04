@@ -1,5 +1,10 @@
 """ Stage API
 
+    This work is funded through NLnet under Grant 2019-02-012
+
+    License: LGPLv3+
+
+
     Associated development bugs:
     * http://bugs.libre-riscv.org/show_bug.cgi?id=148
     * http://bugs.libre-riscv.org/show_bug.cgi?id=64

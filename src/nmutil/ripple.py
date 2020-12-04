@@ -1,3 +1,10 @@
+"""
+    This work is funded through NLnet under Grant 2019-02-012
+
+    License: LGPLv3+
+
+"""
+
 # need to ripple the starting LSB of each partition up through the
 # rest of the partition.  a Mux on the partition gate therefore selects
 # either the current "thing" being propagated, or, if the gate is set open,

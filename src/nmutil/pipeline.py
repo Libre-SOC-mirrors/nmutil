@@ -1,3 +1,11 @@
+"""
+    This work is funded through NLnet under Grant 2019-02-012
+
+    License: LGPLv3+
+
+
+"""
+
 """ Example 5: Making use of PyRTL and Introspection. """
 
 from collections.abc import Sequence

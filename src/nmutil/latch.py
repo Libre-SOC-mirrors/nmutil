@@ -1,3 +1,10 @@
+"""
+    This work is funded through NLnet under Grant 2019-02-012
+
+    License: LGPLv3+
+
+
+"""
 from nmigen.compat.sim import run_simulation
 from nmigen.cli import verilog, rtlil
 from nmigen import Record, Signal, Module, Const, Elaboratable, Mux

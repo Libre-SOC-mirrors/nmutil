@@ -1,5 +1,10 @@
 """ nmigen operator functions / utils
 
+    This work is funded through NLnet under Grant 2019-02-012
+
+    License: LGPLv3+
+
+
     eq:
     --
 

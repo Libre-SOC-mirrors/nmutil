@@ -1,3 +1,13 @@
+"""
+    This work is funded through NLnet under Grant 2019-02-012
+
+    License: LGPLv3+
+
+    Associated bugreports:
+    * https://bugs.libre-soc.org/show_bug.cgi?id=538
+
+"""
+
 from nmigen import Elaboratable
 from ieee754.pipeline import DynamicPipe
 from nmutil.singlepipe import StageChain

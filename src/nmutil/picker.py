@@ -1,6 +1,11 @@
 """ Priority Picker: optimised back-to-back PriorityEncoder and Decoder
     and MultiPriorityPicker: cascading mutually-exclusive pickers
 
+    This work is funded through NLnet under Grant 2019-02-012
+
+    License: LGPLv3+
+
+
     PriorityPicker: the input is N bits, the output is N bits wide and
     only one is enabled.
 
