@@ -63,6 +63,9 @@ def write_gtkw(gtkw_name, vcd_name, gtkw_dom, gtkw_style=None,
 
     In place of a class name, an inline class description can be used.
     ``(signal, {attribute: value, ...}, ...)``
+
+    An anonymous group can be used to apply a style to a group of signals.
+    ``({attribute: value}, [signal, signal, ...])``
     """
     colors = {
         'blue': GTKWColor.blue,
@@ -145,10 +148,13 @@ def write_gtkw(gtkw_name, vcd_name, gtkw_dom, gtkw_style=None,
                         gtkw.blank(node['comment'])
                 # emit the group delimiters and walk over the child list
                 if children is not None:
-                    gtkw.begin_group(node_name)
+                    # only emit a group if it has a name
+                    if isinstance(node_name, str):
+                        gtkw.begin_group(node_name)
                     # pass on the group style to its children
                     walk(children, node_style)
-                    gtkw.end_group(node_name)
+                    if isinstance(node_name, str):
+                        gtkw.end_group(node_name)
                 # emit a trace, if the node is a signal
                 elif node_name is not None:
                     signal_name = node_name
