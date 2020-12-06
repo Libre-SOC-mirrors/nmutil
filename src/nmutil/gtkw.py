@@ -42,7 +42,8 @@ def write_gtkw(gtkw_name, vcd_name, gtkw_dom, gtkw_style=None,
 
     Attribute choices:
 
-    * module: instance path, for prepending to the signal name
+    * module: absolute path of the current module
+    * submodule: same as above, but relative
     * color: trace color
     * base: numerical base for value display
     * display: alternate text to display in the signal pane
@@ -146,6 +147,16 @@ def write_gtkw(gtkw_name, vcd_name, gtkw_dom, gtkw_style=None,
                 elif isinstance(node, dict):
                     if 'comment' in node:
                         gtkw.blank(node['comment'])
+                # merge the submodule into the module path
+                if 'submodule' in node_style:
+                    node_module = node_style['submodule']
+                    if 'module' in node_style:
+                        node_top_module = node_style['module']
+                        node_module = node_top_module + '.' + node_module
+                    # update the module path
+                    node_style['module'] = node_module
+                    # don't propagate this attribute to children
+                    del node_style['submodule']
                 # emit the group delimiters and walk over the child list
                 if children is not None:
                     # only emit a group if it has a name
