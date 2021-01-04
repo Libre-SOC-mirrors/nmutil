@@ -23,7 +23,8 @@ def write_gtkw(gtkw_name, vcd_name, gtkw_dom, gtkw_style=None,
     :param color: default trace color
     :param base: default numerical base
     :param loc: source code location to include as a comment
-    :param zoom: initial zoom level, in GTKWave format
+    :param zoom: initial zoom level, in GTKWave format. Can also be "formal"
+                 when the file comes from a formal engine
     :param marker: initial location of a marker
     :param clk_period: clock period in seconds, helping
                        to set a reasonable initial zoom level.
@@ -87,6 +88,9 @@ def write_gtkw(gtkw_name, vcd_name, gtkw_dom, gtkw_style=None,
         gtkw.dumpfile(vcd_name)
         # set a reasonable zoom level
         # also, move the marker to an interesting place
+        if zoom == "formal":
+            # output from formal engines looks good at this zoom level
+            zoom = -6.3
         if zoom is None:
             zoom = -42.8 - log2(clk_period)
             # base zoom level is affected by time resolution units
