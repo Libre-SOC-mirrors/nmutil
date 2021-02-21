@@ -6,7 +6,7 @@
 """
 
 from collections.abc import Iterable
-from nmigen import Mux, Signal
+from nmigen import Mux, Signal, Cat
 
 # XXX this already exists in nmigen._utils
 # see https://bugs.libre-soc.org/show_bug.cgi?id=297
@@ -77,3 +77,33 @@ except ImportError:
     def Display(*args):
         return []
 
+
+def sel(m, r, sel_bits, field_width=None, name=None):
+    """Forms a subfield from a selection of bits of the signal `r`
+    ("register").
+
+    :param m: nMigen Module for adding the wires
+    :param r: signal containing the field from which to select the subfield
+    :param sel_bits: bit indices of the subfield, in "MSB 0" convention,
+                     from most significant to least significant. Note that
+                     the indices are allowed to be non-contiguous and/or
+                     out-of-order.
+    :param field_width: field width. If absent, use the signal `r` own width.
+    :param name: name of the generated Signal
+    :returns: a new Signal which gets assigned to the subfield
+    """
+    # find the MSB index in LSB0 numbering
+    if field_width is None:
+        msb = len(r) - 1
+    else:
+        msb = field_width - 1
+    # extract the selected bits
+    sig_list = []
+    for idx in sel_bits:
+        sig_list.append(r[msb - idx])
+    # place the LSB at the front of the list,
+    # since, in nMigen, Cat starts from the LSB
+    sig_list.reverse()
+    sel_ret = Signal(len(sig_list), name=name)
+    m.d.comb += sel_ret.eq(Cat(*sig_list))
+    return sel_ret
