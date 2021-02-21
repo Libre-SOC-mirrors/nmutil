@@ -78,7 +78,7 @@ except ImportError:
         return []
 
 
-def sel(m, r, sel_bits, field_width=None, name=None):
+def sel(m, r, sel_bits, field_width=None, name=None, src_loc_at=0):
     """Forms a subfield from a selection of bits of the signal `r`
     ("register").
 
@@ -90,6 +90,9 @@ def sel(m, r, sel_bits, field_width=None, name=None):
                      out-of-order.
     :param field_width: field width. If absent, use the signal `r` own width.
     :param name: name of the generated Signal
+    :param src_loc_at: in the absence of `name`, stack level in which
+                       to find it
+
     :returns: a new Signal which gets assigned to the subfield
     """
     # find the MSB index in LSB0 numbering
@@ -104,6 +107,6 @@ def sel(m, r, sel_bits, field_width=None, name=None):
     # place the LSB at the front of the list,
     # since, in nMigen, Cat starts from the LSB
     sig_list.reverse()
-    sel_ret = Signal(len(sig_list), name=name)
+    sel_ret = Signal(len(sig_list), name=name, src_loc_at=src_loc_at+1)
     m.d.comb += sel_ret.eq(Cat(*sig_list))
     return sel_ret
