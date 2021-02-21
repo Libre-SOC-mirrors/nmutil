@@ -50,6 +50,7 @@ def write_gtkw(gtkw_name, vcd_name, gtkw_dom, gtkw_style=None,
     * display: alternate text to display in the signal pane
     * comment: comment to display in the signal pane
     * bit: select a bit from a wide signal. MSB is zero, unfortunately
+    * closed (for groups): this group starts closed
 
     **gtkw_dom format**
 
@@ -163,9 +164,14 @@ def write_gtkw(gtkw_name, vcd_name, gtkw_dom, gtkw_style=None,
                     del node_style['submodule']
                 # emit the group delimiters and walk over the child list
                 if children is not None:
+                    # see whether this group starts closed
+                    closed = False
+                    if 'closed' in node_style:
+                        closed = node_style['closed']
+                        del node_style['closed']  # do not inherit
                     # only emit a group if it has a name
                     if isinstance(node_name, str):
-                        gtkw.begin_group(node_name)
+                        gtkw.begin_group(node_name, closed)
                     # pass on the group style to its children
                     walk(children, node_style)
                     if isinstance(node_name, str):
