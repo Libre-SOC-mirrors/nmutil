@@ -22,7 +22,7 @@ setup(
     long_description=README + '\n\n' + NEWS,
     classifiers=[
         "Topic :: Software Development :: Libraries",
-        "License :: OSI Approved :: LGPLv3+",
+        "License :: OSI Approved :: GNU Lesser General Public License v3 or later (LGPLv3+)",
         "Programming Language :: Python :: 3",
     ],
     keywords='nmigen utilities',
