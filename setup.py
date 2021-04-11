@@ -16,7 +16,7 @@ test_requires = [
 ]
 
 setup(
-    name='nmutil',
+    name='libresoc-nmutil',
     version=version,
     description="A nmigen utility library",
     long_description=README + '\n\n' + NEWS,
@@ -27,8 +27,8 @@ setup(
     ],
     keywords='nmigen utilities',
     author='Luke Kenneth Casson Leighton',
-    author_email='lkcl@libre-riscv.org',
-    url='http://git.libre-riscv.org/?p=nmutil',
+    author_email='lkcl@libre-soc.org',
+    url='http://git.libre-soc.org/?p=nmutil.git',
     license='LGPLv3+',
     packages=find_packages('src'),
     package_dir = {'': 'src'},
