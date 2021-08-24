@@ -143,10 +143,10 @@ class RecordObject(Record):
 
 class PrevControl(Elaboratable):
     """ contains signals that come *from* the previous stage (both in and out)
-        * valid_i: previous stage indicating all incoming data is valid.
+        * i_valid: previous stage indicating all incoming data is valid.
                    may be a multi-bit signal, where all bits are required
                    to be asserted to indicate "valid".
-        * ready_o: output to next stage indicating readiness to accept data
+        * o_ready: output to next stage indicating readiness to accept data
         * data_i : an input - MUST be added by the USER of this class
     """
 
@@ -156,29 +156,29 @@ class PrevControl(Elaboratable):
         if maskwid:
             self.mask_i = Signal(maskwid)                # prev   >>in  self
             self.stop_i = Signal(maskwid)                # prev   >>in  self
-        self.valid_i = Signal(i_width, name="p_valid_i") # prev   >>in  self
-        self._ready_o = Signal(name="p_ready_o")         # prev   <<out self
+        self.i_valid = Signal(i_width, name="p_i_valid") # prev   >>in  self
+        self._o_ready = Signal(name="p_o_ready")         # prev   <<out self
         self.data_i = None # XXX MUST BE ADDED BY USER
         if stage_ctl:
-            self.s_ready_o = Signal(name="p_s_o_rdy")    # prev   <<out self
+            self.s_o_ready = Signal(name="p_s_o_rdy")    # prev   <<out self
         self.trigger = Signal(reset_less=True)
 
     @property
-    def ready_o(self):
+    def o_ready(self):
         """ public-facing API: indicates (externally) that stage is ready
         """
         if self.stage_ctl:
-            return self.s_ready_o # set dynamically by stage
-        return self._ready_o      # return this when not under dynamic control
+            return self.s_o_ready # set dynamically by stage
+        return self._o_ready      # return this when not under dynamic control
 
     def _connect_in(self, prev, direct=False, fn=None,
                     do_data=True, do_stop=True):
         """ internal helper function to connect stage to an input source.
             do not use to connect stage-to-stage!
         """
-        valid_i = prev.valid_i if direct else prev.valid_i_test
-        res = [self.valid_i.eq(valid_i),
-               prev.ready_o.eq(self.ready_o)]
+        i_valid = prev.i_valid if direct else prev.i_valid_test
+        res = [self.i_valid.eq(i_valid),
+               prev.o_ready.eq(self.o_ready)]
         if self.maskwid:
             res.append(self.mask_i.eq(prev.mask_i))
             if do_stop:
@@ -189,39 +189,39 @@ class PrevControl(Elaboratable):
         return res + [nmoperator.eq(self.data_i, data_i)]
 
     @property
-    def valid_i_test(self):
-        vlen = len(self.valid_i)
+    def i_valid_test(self):
+        vlen = len(self.i_valid)
         if vlen > 1:
-            # multi-bit case: valid only when valid_i is all 1s
-            all1s = Const(-1, (len(self.valid_i), False))
-            valid_i = (self.valid_i == all1s)
+            # multi-bit case: valid only when i_valid is all 1s
+            all1s = Const(-1, (len(self.i_valid), False))
+            i_valid = (self.i_valid == all1s)
         else:
-            # single-bit valid_i case
-            valid_i = self.valid_i
+            # single-bit i_valid case
+            i_valid = self.i_valid
 
         # when stage indicates not ready, incoming data
         # must "appear" to be not ready too
         if self.stage_ctl:
-            valid_i = valid_i & self.s_ready_o
+            i_valid = i_valid & self.s_o_ready
 
-        return valid_i
+        return i_valid
 
     def elaborate(self, platform):
         m = Module()
-        m.d.comb += self.trigger.eq(self.valid_i_test & self.ready_o)
+        m.d.comb += self.trigger.eq(self.i_valid_test & self.o_ready)
         return m
 
     def eq(self, i):
         res = [nmoperator.eq(self.data_i, i.data_i),
-                self.ready_o.eq(i.ready_o),
-                self.valid_i.eq(i.valid_i)]
+                self.o_ready.eq(i.o_ready),
+                self.i_valid.eq(i.i_valid)]
         if self.maskwid:
             res.append(self.mask_i.eq(i.mask_i))
         return res
 
     def __iter__(self):
-        yield self.valid_i
-        yield self.ready_o
+        yield self.i_valid
+        yield self.o_ready
         if self.maskwid:
             yield self.mask_i
             yield self.stop_i
@@ -239,8 +239,8 @@ class PrevControl(Elaboratable):
 
 class NextControl(Elaboratable):
     """ contains the signals that go *to* the next stage (both in and out)
-        * valid_o: output indicating to next stage that data is valid
-        * ready_i: input from next stage indicating that it can accept data
+        * o_valid: output indicating to next stage that data is valid
+        * i_ready: input from next stage indicating that it can accept data
         * data_o : an output - MUST be added by the USER of this class
     """
     def __init__(self, stage_ctl=False, maskwid=0):
@@ -249,18 +249,18 @@ class NextControl(Elaboratable):
         if maskwid:
             self.mask_o = Signal(maskwid)       # self out>>  next
             self.stop_o = Signal(maskwid)       # self out>>  next
-        self.valid_o = Signal(name="n_valid_o") # self out>>  next
-        self.ready_i = Signal(name="n_ready_i") # self <<in   next
+        self.o_valid = Signal(name="n_o_valid") # self out>>  next
+        self.i_ready = Signal(name="n_i_ready") # self <<in   next
         self.data_o = None # XXX MUST BE ADDED BY USER
         #if self.stage_ctl:
         self.d_valid = Signal(reset=1) # INTERNAL (data valid)
         self.trigger = Signal(reset_less=True)
 
     @property
-    def ready_i_test(self):
+    def i_ready_test(self):
         if self.stage_ctl:
-            return self.ready_i & self.d_valid
-        return self.ready_i
+            return self.i_ready & self.d_valid
+        return self.i_ready
 
     def connect_to_next(self, nxt, do_data=True, do_stop=True):
         """ helper function to connect to the next stage data/valid/ready.
@@ -270,8 +270,8 @@ class NextControl(Elaboratable):
             note: a "connect_from_prev" is completely unnecessary: it's
             just nxt.connect_to_next(self)
         """
-        res = [nxt.valid_i.eq(self.valid_o),
-               self.ready_i.eq(nxt.ready_o)]
+        res = [nxt.i_valid.eq(self.o_valid),
+               self.i_ready.eq(nxt.o_ready)]
         if self.maskwid:
             res.append(nxt.mask_i.eq(self.mask_o))
             if do_stop:
@@ -287,9 +287,9 @@ class NextControl(Elaboratable):
         """ internal helper function to connect stage to an output source.
             do not use to connect stage-to-stage!
         """
-        ready_i = nxt.ready_i if direct else nxt.ready_i_test
-        res = [nxt.valid_o.eq(self.valid_o),
-               self.ready_i.eq(ready_i)]
+        i_ready = nxt.i_ready if direct else nxt.i_ready_test
+        res = [nxt.o_valid.eq(self.o_valid),
+               self.i_ready.eq(i_ready)]
         if self.maskwid:
             res.append(nxt.mask_o.eq(self.mask_o))
             if do_stop:
@@ -301,12 +301,12 @@ class NextControl(Elaboratable):
 
     def elaborate(self, platform):
         m = Module()
-        m.d.comb += self.trigger.eq(self.ready_i_test & self.valid_o)
+        m.d.comb += self.trigger.eq(self.i_ready_test & self.o_valid)
         return m
 
     def __iter__(self):
-        yield self.ready_i
-        yield self.valid_o
+        yield self.i_ready
+        yield self.o_valid
         if self.maskwid:
             yield self.mask_o
             yield self.stop_o

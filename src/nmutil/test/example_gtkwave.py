@@ -20,13 +20,13 @@ class Shifter(Elaboratable):
 
         * ``op__sdir``: shift direction (0 = left, 1 = right)
 
-        * ``p_valid_i`` and ``p_ready_o``: handshake
+        * ``p_i_valid`` and ``p_o_ready``: handshake
 
     * "Next" port:
 
         * ``n_data_o``: shifted value
 
-        * ``n_valid_o`` and ``n_ready_i``: handshake
+        * ``n_o_valid`` and ``n_i_ready``: handshake
     """
     def __init__(self, width):
         self.width = width
@@ -34,11 +34,11 @@ class Shifter(Elaboratable):
         self.p_data_i = Signal(width)
         self.p_shift_i = Signal(width)
         self.op__sdir = Signal()
-        self.p_valid_i = Signal()
-        self.p_ready_o = Signal()
+        self.p_i_valid = Signal()
+        self.p_o_ready = Signal()
         self.n_data_o = Signal(width)
-        self.n_valid_o = Signal()
-        self.n_ready_i = Signal()
+        self.n_o_valid = Signal()
+        self.n_i_ready = Signal()
 
     def elaborate(self, _):
         m = Module()
@@ -87,15 +87,15 @@ class Shifter(Elaboratable):
         with m.FSM():
             with m.State("IDLE"):
                 m.d.comb += [
-                    # keep p.ready_o active on IDLE
-                    self.p_ready_o.eq(1),
+                    # keep p.o_ready active on IDLE
+                    self.p_o_ready.eq(1),
                     # keep loading the shift register and shift count
                     load.eq(1),
                     next_count.eq(self.p_shift_i),
                 ]
                 # capture the direction bit as well
                 m.d.sync += direction.eq(self.op__sdir)
-                with m.If(self.p_valid_i):
+                with m.If(self.p_i_valid):
                     # Leave IDLE when data arrives
                     with m.If(next_count == 0):
                         # short-circuit for zero shift
@@ -113,9 +113,9 @@ class Shifter(Elaboratable):
                     # exit when shift counter goes to zero
                     m.next = "DONE"
             with m.State("DONE"):
-                # keep n_valid_o active while the data is not accepted
-                m.d.comb += self.n_valid_o.eq(1)
-                with m.If(self.n_ready_i):
+                # keep n_o_valid active while the data is not accepted
+                m.d.comb += self.n_o_valid.eq(1)
+                with m.If(self.n_i_ready):
                     # go back to IDLE when the data is accepted
                     m.next = "IDLE"
 
@@ -125,10 +125,10 @@ class Shifter(Elaboratable):
         yield self.op__sdir
         yield self.p_data_i
         yield self.p_shift_i
-        yield self.p_valid_i
-        yield self.p_ready_o
-        yield self.n_ready_i
-        yield self.n_valid_o
+        yield self.p_i_valid
+        yield self.p_o_ready
+        yield self.n_i_ready
+        yield self.n_o_valid
         yield self.n_data_o
 
     def ports(self):
@@ -160,8 +160,8 @@ def write_gtkw_direct():
                        datafmt='dec')
             gtkw.trace(dut + "p_shift_i[7:0]", color=style_input,
                        datafmt='dec')
-            gtkw.trace(dut + "p_valid_i", color=style_input)
-            gtkw.trace(dut + "p_ready_o", color=style_output)
+            gtkw.trace(dut + "p_i_valid", color=style_input)
+            gtkw.trace(dut + "p_o_ready", color=style_output)
         with gtkw.group("debug"):
             gtkw.blank("Some debug statements")
             # change the displayed name in the panel
@@ -177,8 +177,8 @@ def write_gtkw_direct():
         with gtkw.group("next port"):
             gtkw.trace(dut + "n_data_o[7:0]", color=style_output,
                        datafmt='dec')
-            gtkw.trace(dut + "n_valid_o", color=style_output)
-            gtkw.trace(dut + "n_ready_i", color=style_input)
+            gtkw.trace(dut + "n_o_valid", color=style_output)
+            gtkw.trace(dut + "n_i_ready", color=style_input)
 
 
 def test_shifter():
@@ -227,8 +227,8 @@ def test_shifter():
             ('op__sdir', 'in'),
             ('p_data_i[7:0]', 'in'),
             ('p_shift_i[7:0]', 'in'),
-            ('p_valid_i', 'in'),
-            ('p_ready_o', 'out'),
+            ('p_i_valid', 'in'),
+            ('p_o_ready', 'out'),
         ]),
         # Signals in a signal group inherit the group attributes.
         # In this case, a different module path and color.
@@ -247,8 +247,8 @@ def test_shifter():
         ]),
         ('next port', [
             ('n_data_o[7:0]', 'out'),
-            ('n_valid_o', 'out'),
-            ('n_ready_i', 'in'),
+            ('n_o_valid', 'out'),
+            ('n_i_ready', 'in'),
         ]),
     ]
 
@@ -277,14 +277,14 @@ def test_shifter():
     msg.str = ''
 
     def send(data, shift, direction):
-        # present input data and assert valid_i
+        # present input data and assert i_valid
         yield dut.p_data_i.eq(data)
         yield dut.p_shift_i.eq(shift)
         yield dut.op__sdir.eq(direction)
-        yield dut.p_valid_i.eq(1)
+        yield dut.p_i_valid.eq(1)
         yield
-        # wait for p.ready_o to be asserted
-        while not (yield dut.p_ready_o):
+        # wait for p.o_ready to be asserted
+        while not (yield dut.p_o_ready):
             yield
         # show current operation operation
         if direction:
@@ -295,23 +295,23 @@ def test_shifter():
         # underlying signal
         yield msg.eq(0)
         yield msg.eq(1)
-        # clear input data and negate p.valid_i
-        yield dut.p_valid_i.eq(0)
+        # clear input data and negate p.i_valid
+        yield dut.p_i_valid.eq(0)
         yield dut.p_data_i.eq(0)
         yield dut.p_shift_i.eq(0)
         yield dut.op__sdir.eq(0)
 
     def receive(expected):
         # signal readiness to receive data
-        yield dut.n_ready_i.eq(1)
+        yield dut.n_i_ready.eq(1)
         yield
-        # wait for n.valid_o to be asserted
-        while not (yield dut.n_valid_o):
+        # wait for n.o_valid to be asserted
+        while not (yield dut.n_o_valid):
             yield
         # read result
         result = yield dut.n_data_o
-        # negate n.ready_i
-        yield dut.n_ready_i.eq(0)
+        # negate n.i_ready
+        yield dut.n_i_ready.eq(0)
         # check result
         assert result == expected
         # finish displaying the current operation

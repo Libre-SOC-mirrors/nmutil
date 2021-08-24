@@ -72,12 +72,12 @@ class Queue(FIFOInterface, Elaboratable):
         # for people familiar with the chisel Decoupled library:
         # enq is "enqueue" (data in, aka "prev stage"),
         # deq is "dequeue" (data out, aka "next stage")
-        p_ready_o = self.w_rdy
-        p_valid_i = self.w_en
+        p_o_ready = self.w_rdy
+        p_i_valid = self.w_en
         enq_data = self.w_data # aka p_data_i
 
-        n_valid_o = self.r_rdy
-        n_ready_i = self.r_en
+        n_o_valid = self.r_rdy
+        n_i_ready = self.r_en
         deq_data = self.r_data # aka n_data_o
 
         # intermediaries
@@ -102,12 +102,12 @@ class Queue(FIFOInterface, Elaboratable):
                      deq_max.eq(deq_ptr == self.depth - 1),
                      empty.eq(ptr_match & ~maybe_full),
                      full.eq(ptr_match & maybe_full),
-                     do_enq.eq(p_ready_o & p_valid_i), # write conditions ok
-                     do_deq.eq(n_ready_i & n_valid_o), # read conditions ok
+                     do_enq.eq(p_o_ready & p_i_valid), # write conditions ok
+                     do_deq.eq(n_i_ready & n_o_valid), # read conditions ok
 
                      # set r_rdy and w_rdy (NOTE: see pipe mode below)
-                     n_valid_o.eq(~empty), # cannot read if empty!
-                     p_ready_o.eq(~full),  # cannot write if full!
+                     n_o_valid.eq(~empty), # cannot read if empty!
+                     p_o_ready.eq(~full),  # cannot write if full!
 
                      # set up memory and connect to input and output
                      ram_write.addr.eq(enq_ptr),
@@ -136,19 +136,19 @@ class Queue(FIFOInterface, Elaboratable):
         # this done combinatorially to give the exact same characteristics
         # as Memory "write-through"... without relying on a changing API
         if self.fwft:
-            with m.If(p_valid_i):
-                m.d.comb += n_valid_o.eq(1)
+            with m.If(p_i_valid):
+                m.d.comb += n_o_valid.eq(1)
             with m.If(empty):
                 m.d.comb += deq_data.eq(enq_data)
                 m.d.comb += do_deq.eq(0)
-                with m.If(n_ready_i):
+                with m.If(n_i_ready):
                     m.d.comb += do_enq.eq(0)
 
         # pipe mode: if next stage says it's ready (r_rdy), w_en
         #            *must* declare the input ready (w_rdy).
         if self.pipe:
-            with m.If(n_ready_i):
-                m.d.comb += p_ready_o.eq(1)
+            with m.If(n_i_ready):
+                m.d.comb += p_o_ready.eq(1)
 
         # set the count (available free space), optimise on power-of-two
         if self.depth == 1 << ptr_width:  # is depth a power of 2

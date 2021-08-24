@@ -65,23 +65,23 @@ class OutputTest:
             op2 = self.di[i][0]
             muxid = self.di[i][1]
             rs = self.dut.p
-            yield rs.valid_i.eq(1)
+            yield rs.i_valid.eq(1)
             yield rs.data_i.data.eq(op2)
             yield rs.data_i.muxid.eq(muxid)
             yield
-            o_p_ready = yield rs.ready_o
+            o_p_ready = yield rs.o_ready
             while not o_p_ready:
                 yield
-                o_p_ready = yield rs.ready_o
+                o_p_ready = yield rs.o_ready
 
             print ("send", muxid, i, hex(op2))
 
-            yield rs.valid_i.eq(0)
+            yield rs.i_valid.eq(0)
             # wait random period of time before queueing another value
             for i in range(randint(0, 3)):
                 yield
 
-        yield rs.valid_i.eq(0)
+        yield rs.i_valid.eq(0)
 
     def rcv(self, muxid):
         out_i = 0
@@ -91,10 +91,10 @@ class OutputTest:
             count += 1
             assert count != 2000, "timeout: too long"
             n = self.dut.n[muxid]
-            yield n.ready_i.eq(1)
+            yield n.i_ready.eq(1)
             yield
-            o_n_valid = yield n.valid_o
-            i_n_ready = yield n.ready_i
+            o_n_valid = yield n.o_valid
+            i_n_ready = yield n.i_ready
             if not o_n_valid or not i_n_ready:
                 continue
 
@@ -110,7 +110,7 @@ class OutputTest:
                 stall_range = randint(0, 3)
             stall = randint(0, stall_range) != 0
             if stall:
-                yield n.ready_i.eq(0)
+                yield n.i_ready.eq(0)
                 for i in range(stall_range):
                     yield
 
@@ -139,10 +139,10 @@ class TestSyncToPriorityPipe(Elaboratable):
         return m
 
     def ports(self):
-        res = [self.p.valid_i, self.p.ready_o] + \
+        res = [self.p.i_valid, self.p.o_ready] + \
                 self.p.data_i.ports()
         for i in range(len(self.n)):
-            res += [self.n[i].ready_i, self.n[i].valid_o] + \
+            res += [self.n[i].i_ready, self.n[i].o_valid] + \
                     [self.n[i].data_o]
                     #self.n[i].data_o.ports()
         return res

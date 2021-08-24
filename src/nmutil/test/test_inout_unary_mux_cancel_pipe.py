@@ -69,21 +69,21 @@ class InputTest:
         for i in range(self.tlen):
             op2 = self.di[muxid][i]
             rs = self.dut.p[muxid]
-            yield rs.valid_i.eq(1)
+            yield rs.i_valid.eq(1)
             yield rs.data_i.data.eq(op2)
             yield rs.data_i.idx.eq(i)
             yield rs.data_i.muxid.eq(muxid)
             yield rs.mask_i.eq(1)
             yield
-            o_p_ready = yield rs.ready_o
+            o_p_ready = yield rs.o_ready
             while not o_p_ready:
                 yield
-                o_p_ready = yield rs.ready_o
+                o_p_ready = yield rs.o_ready
 
             print ("send", muxid, i, hex(op2), op2)
             self.sent[muxid].append(i)
 
-            yield rs.valid_i.eq(0)
+            yield rs.i_valid.eq(0)
             yield rs.mask_i.eq(0)
             # wait until it's received
             while i in self.do[muxid]:
@@ -93,7 +93,7 @@ class InputTest:
             for i in range(randint(0, 3)):
                 yield
 
-        yield rs.valid_i.eq(0)
+        yield rs.i_valid.eq(0)
         yield
 
         print ("send ended", muxid)
@@ -126,15 +126,15 @@ class InputTest:
             stall_range = randint(0, 3)
             for j in range(randint(1,10)):
                 stall = randint(0, stall_range) != 0
-                yield self.dut.n[0].ready_i.eq(stall)
+                yield self.dut.n[0].i_ready.eq(stall)
                 yield
 
             n = self.dut.n[muxid]
-            yield n.ready_i.eq(1)
+            yield n.i_ready.eq(1)
             yield
             yield rs.stop_i.eq(0) # resets cancel mask
-            o_n_valid = yield n.valid_o
-            i_n_ready = yield n.ready_i
+            o_n_valid = yield n.o_valid
+            i_n_ready = yield n.i_ready
             if not o_n_valid or not i_n_ready:
                 continue
 
