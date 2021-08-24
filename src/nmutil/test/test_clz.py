@@ -8,7 +8,7 @@ import random
 
 
 class CLZTestCase(unittest.TestCase):
-    def run_test(self, inputs, width=8):
+    def run_tst(self, inputs, width=8):
 
         m = Module()
 
@@ -34,11 +34,11 @@ class CLZTestCase(unittest.TestCase):
 
     def test_selected(self):
         inputs = [0, 15, 10, 127]
-        self.run_test(iter(inputs), width=8)
+        self.run_tst(iter(inputs), width=8)
 
     def test_non_power_2(self):
         inputs = [0, 128, 512]
-        self.run_test(iter(inputs), width=11)
+        self.run_tst(iter(inputs), width=11)
 
 
 if __name__ == "__main__":
