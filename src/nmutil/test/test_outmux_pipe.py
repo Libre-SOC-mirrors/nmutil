@@ -66,8 +66,8 @@ class OutputTest:
             muxid = self.di[i][1]
             rs = self.dut.p
             yield rs.i_valid.eq(1)
-            yield rs.data_i.data.eq(op2)
-            yield rs.data_i.muxid.eq(muxid)
+            yield rs.i_data.data.eq(op2)
+            yield rs.i_data.muxid.eq(muxid)
             yield
             o_p_ready = yield rs.o_ready
             while not o_p_ready:
@@ -98,7 +98,7 @@ class OutputTest:
             if not o_n_valid or not i_n_ready:
                 continue
 
-            out_v = yield n.data_o
+            out_v = yield n.o_data
 
             print ("recv", muxid, out_i, hex(out_v))
 
@@ -140,11 +140,11 @@ class TestSyncToPriorityPipe(Elaboratable):
 
     def ports(self):
         res = [self.p.i_valid, self.p.o_ready] + \
-                self.p.data_i.ports()
+                self.p.i_data.ports()
         for i in range(len(self.n)):
             res += [self.n[i].i_ready, self.n[i].o_valid] + \
-                    [self.n[i].data_o]
-                    #self.n[i].data_o.ports()
+                    [self.n[i].o_data]
+                    #self.n[i].o_data.ports()
         return res
 
 

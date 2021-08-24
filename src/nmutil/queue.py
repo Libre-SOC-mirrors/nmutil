@@ -74,11 +74,11 @@ class Queue(FIFOInterface, Elaboratable):
         # deq is "dequeue" (data out, aka "next stage")
         p_o_ready = self.w_rdy
         p_i_valid = self.w_en
-        enq_data = self.w_data # aka p_data_i
+        enq_data = self.w_data # aka p_i_data
 
         n_o_valid = self.r_rdy
         n_i_ready = self.r_en
-        deq_data = self.r_data # aka n_data_o
+        deq_data = self.r_data # aka n_o_data
 
         # intermediaries
         ptr_width = bits_for(self.depth - 1) if self.depth > 1 else 0

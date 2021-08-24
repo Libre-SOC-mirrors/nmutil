@@ -40,8 +40,8 @@ class MultiInControlBase(Elaboratable):
             * n: contains ready/valid to the next stage
 
             User must also:
-            * add data_i members to PrevControl and
-            * add data_o member  to NextControl
+            * add i_data members to PrevControl and
+            * add o_data member  to NextControl
         """
         self.routemask = routemask
         # set up input and output IO ACK (prev/next ready/valid)
@@ -80,7 +80,7 @@ class MultiInControlBase(Elaboratable):
     def set_input(self, i, idx=0):
         """ helper function to set the input data
         """
-        return eq(self.p[idx].data_i, i)
+        return eq(self.p[idx].i_data, i)
 
     def elaborate(self, platform):
         m = Module()
@@ -110,8 +110,8 @@ class MultiOutControlBase(Elaboratable):
             * n: contains ready/valid to the next stages PLURAL
 
             User must also:
-            * add data_i member to PrevControl and
-            * add data_o members to NextControl
+            * add i_data member to PrevControl and
+            * add o_data members to NextControl
         """
 
         if routemask:
@@ -155,7 +155,7 @@ class MultiOutControlBase(Elaboratable):
     def set_input(self, i):
         """ helper function to set the input data
         """
-        return eq(self.p.data_i, i)
+        return eq(self.p.i_data, i)
 
     def __iter__(self):
         yield from self.p
@@ -171,8 +171,8 @@ class CombMultiOutPipeline(MultiOutControlBase):
 
         Attributes:
         -----------
-        p.data_i : stage input data (non-array).  shaped according to ispec
-        n.data_o : stage output data array.       shaped according to ospec
+        p.i_data : stage input data (non-array).  shaped according to ispec
+        n.o_data : stage output data array.       shaped according to ospec
     """
 
     def __init__(self, stage, n_len, n_mux, maskwid=0, routemask=False):
@@ -184,10 +184,10 @@ class CombMultiOutPipeline(MultiOutControlBase):
         self.n_mux = n_mux
 
         # set up the input and output data
-        self.p.data_i = _spec(stage.ispec, 'data_i') # input type
+        self.p.i_data = _spec(stage.ispec, 'i_data') # input type
         for i in range(n_len):
-            name = 'data_o_%d' % i
-            self.n[i].data_o = _spec(stage.ospec, name) # output type
+            name = 'o_data_%d' % i
+            self.n[i].o_data = _spec(stage.ospec, name) # output type
 
     def process(self, i):
         if hasattr(self.stage, "process"):
@@ -236,8 +236,8 @@ class CombMultiOutPipeline(MultiOutControlBase):
 
         # send data on
         #with m.If(pv):
-        m.d.comb += eq(r_data, self.p.data_i)
-        m.d.comb += eq(self.n[muxid].data_o, self.process(r_data))
+        m.d.comb += eq(r_data, self.p.i_data)
+        m.d.comb += eq(self.n[muxid].o_data, self.process(r_data))
 
         if self.maskwid:
             if self.routemask: # straight "routing" mode - treat like data
@@ -263,9 +263,9 @@ class CombMultiInPipeline(MultiInControlBase):
 
         Attributes:
         -----------
-        p.data_i : StageInput, shaped according to ispec
+        p.i_data : StageInput, shaped according to ispec
             The pipeline input
-        p.data_o : StageOutput, shaped according to ospec
+        p.o_data : StageOutput, shaped according to ospec
             The pipeline output
         r_data : input_shape according to ispec
             A temporary (buffered) copy of a prior (valid) input.
@@ -282,9 +282,9 @@ class CombMultiInPipeline(MultiInControlBase):
 
         # set up the input and output data
         for i in range(p_len):
-            name = 'data_i_%d' % i
-            self.p[i].data_i = _spec(stage.ispec, name) # input type
-        self.n.data_o = _spec(stage.ospec, 'data_o')
+            name = 'i_data_%d' % i
+            self.p[i].i_data = _spec(stage.ispec, name) # input type
+        self.n.o_data = _spec(stage.ospec, 'o_data')
 
     def process(self, i):
         if hasattr(self.stage, "process"):
@@ -361,7 +361,7 @@ class CombMultiInPipeline(MultiInControlBase):
                 #m.d.comb += vr.eq(p.i_valid & p.o_ready)
                 with m.If(vr):
                     m.d.comb += eq(self.n.mask_o, self.p[i].mask_i)
-                    m.d.comb += eq(r_data[i], self.p[i].data_i)
+                    m.d.comb += eq(r_data[i], self.p[i].i_data)
         else:
             ml = [] # accumulate output masks
             ms = [] # accumulate output stops
@@ -376,7 +376,7 @@ class CombMultiInPipeline(MultiInControlBase):
                     m.d.comb += maskedout.eq(1)
                 m.d.comb += vr.eq(maskedout.bool() & p.i_valid & p.o_ready)
                 with m.If(vr):
-                    m.d.comb += eq(r_data[i], self.p[i].data_i)
+                    m.d.comb += eq(r_data[i], self.p[i].i_data)
                 if self.maskwid:
                     mlen = len(self.p[i].mask_i)
                     s = mlen*i
@@ -387,7 +387,7 @@ class CombMultiInPipeline(MultiInControlBase):
                 m.d.comb += self.n.mask_o.eq(Cat(*ml))
                 m.d.comb += self.n.stop_o.eq(Cat(*ms))
 
-        m.d.comb += eq(self.n.data_o, self.process(r_data[mid]))
+        m.d.comb += eq(self.n.o_data, self.process(r_data[mid]))
 
         return m
 
@@ -397,9 +397,9 @@ class NonCombMultiInPipeline(MultiInControlBase):
 
         Attributes:
         -----------
-        p.data_i : StageInput, shaped according to ispec
+        p.i_data : StageInput, shaped according to ispec
             The pipeline input
-        p.data_o : StageOutput, shaped according to ospec
+        p.o_data : StageOutput, shaped according to ospec
             The pipeline output
         r_data : input_shape according to ispec
             A temporary (buffered) copy of a prior (valid) input.
@@ -416,9 +416,9 @@ class NonCombMultiInPipeline(MultiInControlBase):
 
         # set up the input and output data
         for i in range(p_len):
-            name = 'data_i_%d' % i
-            self.p[i].data_i = _spec(stage.ispec, name) # input type
-        self.n.data_o = _spec(stage.ospec, 'data_o')
+            name = 'i_data_%d' % i
+            self.p[i].i_data = _spec(stage.ispec, name) # input type
+        self.n.o_data = _spec(stage.ospec, 'o_data')
 
     def process(self, i):
         if hasattr(self.stage, "process"):
@@ -491,7 +491,7 @@ class NonCombMultiInPipeline(MultiInControlBase):
                 #m.d.comb += vr.eq(p.i_valid & p.o_ready)
                 with m.If(vr):
                     m.d.comb += eq(self.n.mask_o, self.p[i].mask_i)
-                    m.d.comb += eq(r_data[i], self.p[i].data_i)
+                    m.d.comb += eq(r_data[i], self.p[i].i_data)
         else:
             ml = [] # accumulate output masks
             ms = [] # accumulate output stops
@@ -506,7 +506,7 @@ class NonCombMultiInPipeline(MultiInControlBase):
                     m.d.comb += maskedout.eq(1)
                 m.d.comb += vr.eq(maskedout.bool() & p.i_valid & p.o_ready)
                 with m.If(vr):
-                    m.d.comb += eq(r_data[i], self.p[i].data_i)
+                    m.d.comb += eq(r_data[i], self.p[i].i_data)
                 if self.maskwid:
                     mlen = len(self.p[i].mask_i)
                     s = mlen*i
@@ -517,7 +517,7 @@ class NonCombMultiInPipeline(MultiInControlBase):
                 m.d.comb += self.n.mask_o.eq(Cat(*ml))
                 m.d.comb += self.n.stop_o.eq(Cat(*ms))
 
-        m.d.comb += eq(self.n.data_o, self.process(r_data[mid]))
+        m.d.comb += eq(self.n.o_data, self.process(r_data[mid]))
 
         return m
 
@@ -532,7 +532,7 @@ class CombMuxOutPipe(CombMultiOutPipeline):
                                             routemask=routemask)
 
         # HACK: n-mux is also the stage... so set the muxid equal to input muxid
-        muxid = getattr(self.p.data_i, muxidname)
+        muxid = getattr(self.p.i_data, muxidname)
         print ("combmuxout", muxidname, muxid)
         stage.m_id = muxid
 

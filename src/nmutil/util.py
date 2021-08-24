@@ -22,7 +22,7 @@ def treereduce(tree, op, fn):
     """treereduce: apply a map-reduce to a list.
     examples: OR-reduction of one member of a list of Records down to a
               single data point:
-              treereduce(tree, operator.or_, lambda x: getattr(x, "data_o"))
+              treereduce(tree, operator.or_, lambda x: getattr(x, "o_data"))
     """
     #print ("treereduce", tree)
     if not isinstance(tree, list):

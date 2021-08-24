@@ -135,9 +135,9 @@ class InputTest:
             op2 = self.di[muxid][i]
             rs = self.dut.p[muxid]
             yield rs.i_valid.eq(1)
-            yield rs.data_i.data.eq(op2)
-            yield rs.data_i.idx.eq(i)
-            yield rs.data_i.muxid.eq(muxid)
+            yield rs.i_data.data.eq(op2)
+            yield rs.i_data.idx.eq(i)
+            yield rs.i_data.muxid.eq(muxid)
             yield
             o_p_ready = yield rs.o_ready
             step_limiter = StepLimiter(10000)
@@ -179,9 +179,9 @@ class InputTest:
             if not o_n_valid or not i_n_ready:
                 continue
 
-            muxid = yield n.data_o.muxid
-            out_i = yield n.data_o.idx
-            out_v = yield n.data_o.data
+            muxid = yield n.o_data.muxid
+            out_i = yield n.o_data.idx
+            out_v = yield n.o_data.data
 
             print("recv", muxid, out_i, hex(out_v))
 

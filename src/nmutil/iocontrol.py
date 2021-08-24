@@ -147,7 +147,7 @@ class PrevControl(Elaboratable):
                    may be a multi-bit signal, where all bits are required
                    to be asserted to indicate "valid".
         * o_ready: output to next stage indicating readiness to accept data
-        * data_i : an input - MUST be added by the USER of this class
+        * i_data : an input - MUST be added by the USER of this class
     """
 
     def __init__(self, i_width=1, stage_ctl=False, maskwid=0, offs=0):
@@ -158,7 +158,7 @@ class PrevControl(Elaboratable):
             self.stop_i = Signal(maskwid)                # prev   >>in  self
         self.i_valid = Signal(i_width, name="p_i_valid") # prev   >>in  self
         self._o_ready = Signal(name="p_o_ready")         # prev   <<out self
-        self.data_i = None # XXX MUST BE ADDED BY USER
+        self.i_data = None # XXX MUST BE ADDED BY USER
         if stage_ctl:
             self.s_o_ready = Signal(name="p_s_o_rdy")    # prev   <<out self
         self.trigger = Signal(reset_less=True)
@@ -185,8 +185,8 @@ class PrevControl(Elaboratable):
                 res.append(self.stop_i.eq(prev.stop_i))
         if do_data is False:
             return res
-        data_i = fn(prev.data_i) if fn is not None else prev.data_i
-        return res + [nmoperator.eq(self.data_i, data_i)]
+        i_data = fn(prev.i_data) if fn is not None else prev.i_data
+        return res + [nmoperator.eq(self.i_data, i_data)]
 
     @property
     def i_valid_test(self):
@@ -212,7 +212,7 @@ class PrevControl(Elaboratable):
         return m
 
     def eq(self, i):
-        res = [nmoperator.eq(self.data_i, i.data_i),
+        res = [nmoperator.eq(self.i_data, i.i_data),
                 self.o_ready.eq(i.o_ready),
                 self.i_valid.eq(i.i_valid)]
         if self.maskwid:
@@ -225,13 +225,13 @@ class PrevControl(Elaboratable):
         if self.maskwid:
             yield self.mask_i
             yield self.stop_i
-        if hasattr(self.data_i, "ports"):
-            yield from self.data_i.ports()
-        elif (isinstance(self.data_i, Sequence) or
-              isinstance(self.data_i, Iterable)):
-            yield from self.data_i
+        if hasattr(self.i_data, "ports"):
+            yield from self.i_data.ports()
+        elif (isinstance(self.i_data, Sequence) or
+              isinstance(self.i_data, Iterable)):
+            yield from self.i_data
         else:
-            yield self.data_i
+            yield self.i_data
 
     def ports(self):
         return list(self)
@@ -241,7 +241,7 @@ class NextControl(Elaboratable):
     """ contains the signals that go *to* the next stage (both in and out)
         * o_valid: output indicating to next stage that data is valid
         * i_ready: input from next stage indicating that it can accept data
-        * data_o : an output - MUST be added by the USER of this class
+        * o_data : an output - MUST be added by the USER of this class
     """
     def __init__(self, stage_ctl=False, maskwid=0):
         self.stage_ctl = stage_ctl
@@ -251,7 +251,7 @@ class NextControl(Elaboratable):
             self.stop_o = Signal(maskwid)       # self out>>  next
         self.o_valid = Signal(name="n_o_valid") # self out>>  next
         self.i_ready = Signal(name="n_i_ready") # self <<in   next
-        self.data_o = None # XXX MUST BE ADDED BY USER
+        self.o_data = None # XXX MUST BE ADDED BY USER
         #if self.stage_ctl:
         self.d_valid = Signal(reset=1) # INTERNAL (data valid)
         self.trigger = Signal(reset_less=True)
@@ -277,8 +277,8 @@ class NextControl(Elaboratable):
             if do_stop:
                 res.append(nxt.stop_i.eq(self.stop_o))
         if do_data:
-            res.append(nmoperator.eq(nxt.data_i, self.data_o))
-        print ("connect to next", self, self.maskwid, nxt.data_i,
+            res.append(nmoperator.eq(nxt.i_data, self.o_data))
+        print ("connect to next", self, self.maskwid, nxt.i_data,
                                   do_data, do_stop)
         return res
 
@@ -296,8 +296,8 @@ class NextControl(Elaboratable):
                 res.append(nxt.stop_o.eq(self.stop_o))
         if not do_data:
             return res
-        data_o = fn(nxt.data_o) if fn is not None else nxt.data_o
-        return res + [nmoperator.eq(data_o, self.data_o)]
+        o_data = fn(nxt.o_data) if fn is not None else nxt.o_data
+        return res + [nmoperator.eq(o_data, self.o_data)]
 
     def elaborate(self, platform):
         m = Module()
@@ -310,13 +310,13 @@ class NextControl(Elaboratable):
         if self.maskwid:
             yield self.mask_o
             yield self.stop_o
-        if hasattr(self.data_o, "ports"):
-            yield from self.data_o.ports()
-        elif (isinstance(self.data_o, Sequence) or
-              isinstance(self.data_o, Iterable)):
-            yield from self.data_o
+        if hasattr(self.o_data, "ports"):
+            yield from self.o_data.ports()
+        elif (isinstance(self.o_data, Sequence) or
+              isinstance(self.o_data, Iterable)):
+            yield from self.o_data
         else:
-            yield self.data_o
+            yield self.o_data
 
     def ports(self):
         return list(self)

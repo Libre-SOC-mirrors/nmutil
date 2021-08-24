@@ -14,7 +14,7 @@ class Shifter(Elaboratable):
 
     * "Prev" port:
 
-        * ``p_data_i``: value to be shifted
+        * ``p_i_data``: value to be shifted
 
         * ``p_shift_i``: shift amount
 
@@ -24,19 +24,19 @@ class Shifter(Elaboratable):
 
     * "Next" port:
 
-        * ``n_data_o``: shifted value
+        * ``n_o_data``: shifted value
 
         * ``n_o_valid`` and ``n_i_ready``: handshake
     """
     def __init__(self, width):
         self.width = width
         """data width"""
-        self.p_data_i = Signal(width)
+        self.p_i_data = Signal(width)
         self.p_shift_i = Signal(width)
         self.op__sdir = Signal()
         self.p_i_valid = Signal()
         self.p_o_ready = Signal()
-        self.n_data_o = Signal(width)
+        self.n_o_data = Signal(width)
         self.n_o_valid = Signal()
         self.n_i_ready = Signal()
 
@@ -57,8 +57,8 @@ class Shifter(Elaboratable):
         # build the data flow
         m.d.comb += [
             # connect input and output
-            shift_in.eq(self.p_data_i),
-            self.n_data_o.eq(shift_reg),
+            shift_in.eq(self.p_i_data),
+            self.n_o_data.eq(shift_reg),
             # generate shifted views of the register
             shift_left_by_1.eq(Cat(0, shift_reg[:-1])),
             shift_right_by_1.eq(Cat(shift_reg[1:], 0)),
@@ -123,13 +123,13 @@ class Shifter(Elaboratable):
 
     def __iter__(self):
         yield self.op__sdir
-        yield self.p_data_i
+        yield self.p_i_data
         yield self.p_shift_i
         yield self.p_i_valid
         yield self.p_o_ready
         yield self.n_i_ready
         yield self.n_o_valid
-        yield self.n_data_o
+        yield self.n_o_data
 
     def ports(self):
         return list(self)
@@ -156,7 +156,7 @@ def write_gtkw_direct():
         with gtkw.group("prev port"):
             gtkw.trace(dut + "op__sdir", color=style_input)
             # demonstrates using decimal base (default is hex)
-            gtkw.trace(dut + "p_data_i[7:0]", color=style_input,
+            gtkw.trace(dut + "p_i_data[7:0]", color=style_input,
                        datafmt='dec')
             gtkw.trace(dut + "p_shift_i[7:0]", color=style_input,
                        datafmt='dec')
@@ -175,7 +175,7 @@ def write_gtkw_direct():
             gtkw.trace(dut + "count[3:0]")
             gtkw.trace(dut + "shift_reg[7:0]", datafmt='dec')
         with gtkw.group("next port"):
-            gtkw.trace(dut + "n_data_o[7:0]", color=style_output,
+            gtkw.trace(dut + "n_o_data[7:0]", color=style_output,
                        datafmt='dec')
             gtkw.trace(dut + "n_o_valid", color=style_output)
             gtkw.trace(dut + "n_i_ready", color=style_input)
@@ -225,7 +225,7 @@ def test_shifter():
         ('prev port', [
             # attach a class style for each signal
             ('op__sdir', 'in'),
-            ('p_data_i[7:0]', 'in'),
+            ('p_i_data[7:0]', 'in'),
             ('p_shift_i[7:0]', 'in'),
             ('p_i_valid', 'in'),
             ('p_o_ready', 'out'),
@@ -246,7 +246,7 @@ def test_shifter():
             'shift_reg[7:0]',
         ]),
         ('next port', [
-            ('n_data_o[7:0]', 'out'),
+            ('n_o_data[7:0]', 'out'),
             ('n_o_valid', 'out'),
             ('n_i_ready', 'in'),
         ]),
@@ -278,7 +278,7 @@ def test_shifter():
 
     def send(data, shift, direction):
         # present input data and assert i_valid
-        yield dut.p_data_i.eq(data)
+        yield dut.p_i_data.eq(data)
         yield dut.p_shift_i.eq(shift)
         yield dut.op__sdir.eq(direction)
         yield dut.p_i_valid.eq(1)
@@ -297,7 +297,7 @@ def test_shifter():
         yield msg.eq(1)
         # clear input data and negate p.i_valid
         yield dut.p_i_valid.eq(0)
-        yield dut.p_data_i.eq(0)
+        yield dut.p_i_data.eq(0)
         yield dut.p_shift_i.eq(0)
         yield dut.op__sdir.eq(0)
 
@@ -309,7 +309,7 @@ def test_shifter():
         while not (yield dut.n_o_valid):
             yield
         # read result
-        result = yield dut.n_data_o
+        result = yield dut.n_o_data
         # negate n.i_ready
         yield dut.n_i_ready.eq(0)
         # check result
