@@ -23,7 +23,7 @@ def exts(exts_data, width, fullwidth):
 def extz(extz_data, width, fullwidth):
     diff = fullwidth-width
     if diff == 0:
-        return exts_data
+        return extz_data
     extz_data = extz_data[0:width]
     if diff <= 0:
         return extz_data[:fullwidth]
