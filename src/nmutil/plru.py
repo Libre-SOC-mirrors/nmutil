@@ -114,4 +114,3 @@ if __name__ == '__main__':
     vl = rtlil.convert(dut, ports=dut.ports())
     with open("test_plru.il", "w") as f:
         f.write(vl)
-
