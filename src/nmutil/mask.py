@@ -9,6 +9,7 @@
 from nmigen import Module, Signal, Elaboratable
 from nmigen.utils import log2_int
 
+
 def masked(m_out, m_in, mask):
     return (m_out & ~mask) | (m_in & mask)
 
@@ -27,4 +28,3 @@ class Mask(Elaboratable):
                 m.d.comb += self.mask[i].eq(1)
 
         return m
-
