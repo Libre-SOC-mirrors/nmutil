@@ -1,28 +1,28 @@
 # SPDX-License-Identifier: LGPL-3-or-later
 # See Notices.txt for copyright information
 
-from os import PathLike
-from typing import Dict, Tuple, Union
-import unittest
 import weakref
 from pathlib import Path
 
 
 class RunCounter:
-    __run_counts: Dict[str, int]
-
-    def __init__(self) -> None:
+    def __init__(self):
         self.__run_counts = {}
+        """dict mapping self.next() keys to the next int value returned by
+        self.next()"""
 
-    def next(self, k: str) -> int:
+    def next(self, k):
+        """get a incrementing run counter for a `str` key `k`. returns an `int`."""
         retval = self.__run_counts.get(k, 0)
         self.__run_counts[k] = retval + 1
         return retval
 
-    __RUN_COUNTERS: Dict[int, Tuple[weakref.ref, "RunCounter"]] = {}
+    __RUN_COUNTERS = {}
+    """dict mapping object ids (int) to a tuple of a weakref.ref to that
+    object, and the corresponding RunCounter"""
 
     @staticmethod
-    def get(obj: object) -> "RunCounter":
+    def get(obj):
         k = id(obj)
         t = RunCounter.__RUN_COUNTERS
         try:
@@ -36,9 +36,8 @@ class RunCounter:
             return retval
 
 
-_StrPath = Union[str, PathLike]
-
-
-def get_test_path(test_case: unittest.TestCase, base_path: _StrPath) -> Path:
+def get_test_path(test_case, base_path):
+    """get the `Path` for a particular unittest.TestCase instance
+    (`test_case`). base_path is either a str or a path-like."""
     count = RunCounter.get(test_case).next(test_case.id())
     return Path(base_path) / test_case.id() / str(count)
