@@ -229,7 +229,7 @@ class CombMultiOutPipeline(MultiOutControlBase):
             m.d.comb += self.p.o_ready.eq(self.n[muxid].i_ready)
         else:
             data_valid = self.n[muxid].o_valid
-            m.d.comb += self.p.o_ready.eq(~data_valid | self.n[muxid].i_ready)
+            m.d.comb += self.p.o_ready.eq(self.n[muxid].i_ready)
             m.d.comb += data_valid.eq(p_i_valid | \
                                     (~self.n[muxid].i_ready & data_valid))
 
@@ -237,7 +237,10 @@ class CombMultiOutPipeline(MultiOutControlBase):
         # send data on
         #with m.If(pv):
         m.d.comb += eq(r_data, self.p.i_data)
-        m.d.comb += eq(self.n[muxid].o_data, self.process(r_data))
+        #m.d.comb += eq(self.n[muxid].o_data, self.process(r_data))
+        for i in range(len(self.n)):
+            with m.If(muxid == i):
+                m.d.comb += eq(self.n[i].o_data, self.process(r_data))
 
         if self.maskwid:
             if self.routemask: # straight "routing" mode - treat like data
@@ -313,7 +316,6 @@ class CombMultiInPipeline(MultiInControlBase):
                 print ("setup", self, self.stage, r)
                 self.stage.setup(m, r)
         if True: # len(r_data) > 1: # hmm always create an Array even of len 1
-            r_data = Array(r_data)
             p_i_valid = Array(p_i_valid)
             n_i_readyn = Array(n_i_readyn)
             data_valid = Array(data_valid)
@@ -334,7 +336,8 @@ class CombMultiInPipeline(MultiInControlBase):
             m.d.comb += maskedout.eq(p.mask_i & ~p.stop_i)
         else:
             m.d.comb += maskedout.eq(1)
-        m.d.comb += p_i_valid[mid].eq(maskedout & self.p_mux.active)
+        m.d.comb += p_i_valid[mid].eq(maskedout & self.p_mux.active &
+                                      self.p[mid].i_valid)
         m.d.comb += self.p[mid].o_ready.eq(~data_valid[mid] | self.n.i_ready)
         m.d.comb += n_i_readyn[mid].eq(nirn & data_valid[mid])
         anyvalid = Signal(i, reset_less=True)
@@ -362,6 +365,8 @@ class CombMultiInPipeline(MultiInControlBase):
                 with m.If(vr):
                     m.d.comb += eq(self.n.mask_o, self.p[i].mask_i)
                     m.d.comb += eq(r_data[i], self.process(self.p[i].i_data))
+                    with m.If(mid == i):
+                        m.d.comb += eq(self.n.o_data, r_data[i])
         else:
             ml = [] # accumulate output masks
             ms = [] # accumulate output stops
@@ -377,6 +382,8 @@ class CombMultiInPipeline(MultiInControlBase):
                 m.d.comb += vr.eq(maskedout.bool() & p.i_valid & p.o_ready)
                 with m.If(vr):
                     m.d.comb += eq(r_data[i], self.process(self.p[i].i_data))
+                    with m.If(mid == i):
+                        m.d.comb += eq(self.n.o_data, r_data[i])
                 if self.maskwid:
                     mlen = len(self.p[i].mask_i)
                     s = mlen*i
@@ -387,7 +394,8 @@ class CombMultiInPipeline(MultiInControlBase):
                 m.d.comb += self.n.mask_o.eq(Cat(*ml))
                 m.d.comb += self.n.stop_o.eq(Cat(*ms))
 
-        m.d.comb += eq(self.n.o_data, r_data[mid])
+        #print ("o_data", self.n.o_data, "r_data[mid]", mid, r_data[mid])
+        #m.d.comb += eq(self.n.o_data, r_data[mid])
 
         return m
 
