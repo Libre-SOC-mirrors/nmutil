@@ -128,13 +128,13 @@ class ReservationStations(Elaboratable):
         self.n = self.outpipe.n # use pipe in/out as this class in/out
         self._ports = self.inpipe.ports() + self.outpipe.ports()
 
-    def set_alu(self, alu):
-        """set_alu: sets self.alu and also establishes a suite of pseudo-alus
+    def setup_pseudoalus(self):
+        """setup_pseudoalus: establishes a suite of pseudo-alus
         that look to all pipeline-intents-and-purposes just like the original
         """
-        self.alu, self.pseudoalus = alu, []
-        for i in range(num_rows):
-            self.pseudoalus.append(ALUProxy(alu, self.p[i], self.n[i]))
+        self.pseudoalus = []
+        for i in range(self.num_rows):
+            self.pseudoalus.append(ALUProxy(self.alu, self.p[i], self.n[i]))
 
     def elaborate(self, platform):
         m = Module()
