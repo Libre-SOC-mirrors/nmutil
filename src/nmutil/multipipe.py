@@ -312,7 +312,7 @@ class CombMultiInPipeline(MultiInControlBase):
             if hasattr(self.stage, "setup"):
                 print ("setup", self, self.stage, r)
                 self.stage.setup(m, r)
-        if len(r_data) > 1:
+        if True: # len(r_data) > 1: # hmm always create an Array even of len 1
             r_data = Array(r_data)
             p_i_valid = Array(p_i_valid)
             n_i_readyn = Array(n_i_readyn)
@@ -361,7 +361,7 @@ class CombMultiInPipeline(MultiInControlBase):
                 #m.d.comb += vr.eq(p.i_valid & p.o_ready)
                 with m.If(vr):
                     m.d.comb += eq(self.n.mask_o, self.p[i].mask_i)
-                    m.d.comb += eq(r_data[i], self.p[i].i_data)
+                    m.d.comb += eq(r_data[i], self.process(self.p[i].i_data))
         else:
             ml = [] # accumulate output masks
             ms = [] # accumulate output stops
@@ -376,7 +376,7 @@ class CombMultiInPipeline(MultiInControlBase):
                     m.d.comb += maskedout.eq(1)
                 m.d.comb += vr.eq(maskedout.bool() & p.i_valid & p.o_ready)
                 with m.If(vr):
-                    m.d.comb += eq(r_data[i], self.p[i].i_data)
+                    m.d.comb += eq(r_data[i], self.process(self.p[i].i_data))
                 if self.maskwid:
                     mlen = len(self.p[i].mask_i)
                     s = mlen*i
@@ -387,7 +387,7 @@ class CombMultiInPipeline(MultiInControlBase):
                 m.d.comb += self.n.mask_o.eq(Cat(*ml))
                 m.d.comb += self.n.stop_o.eq(Cat(*ms))
 
-        m.d.comb += eq(self.n.o_data, self.process(r_data[mid]))
+        m.d.comb += eq(self.n.o_data, r_data[mid])
 
         return m
 
