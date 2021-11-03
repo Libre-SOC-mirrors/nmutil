@@ -25,6 +25,8 @@ from nmigen.cli import main, verilog
 from nmutil.singlepipe import PassThroughStage
 from nmutil.multipipe import CombMuxOutPipe
 from nmutil.multipipe import PriorityCombMuxInPipe
+from nmutil.multipipe import InputPriorityArbiter
+from nmutil.iocontrol import NextControl, PrevControl
 
 
 def num_bits(n):
@@ -155,6 +157,105 @@ class ReservationStations(Elaboratable):
 
         for i in range(self.feedback_width, self.num_rows):
             self.outpipe.n[i].connect_to_next(self.inpipe.p[i])
+
+        return m
+
+    def ports(self):
+        return self._ports
+
+    def i_specfn(self):
+        return self.alu.ispec()
+
+    def o_specfn(self):
+        return self.alu.ospec()
+
+
+class ReservationStations2(Elaboratable):
+    """ Reservation-Station pipeline
+
+        Input: num_rows - number of input and output Reservation Stations
+
+        Requires: the addition of an "alu" object, from which ispec and ospec
+        are taken, and inpipe and outpipe are connected to it
+
+        * fan-in on inputs (an array of BaseData: a,b,mid)
+        * ALU pipeline
+        * fan-out on outputs (an array of FPPackData: z,mid)
+
+        Fan-in and Fan-out are combinatorial.
+    """
+    def __init__(self, num_rows):
+        self.num_rows = nr = num_rows
+        id_wid = num_rows.bit_length()
+        self.p = []
+        self.n = []
+        for i in range(p_len):
+            self.p.append(PrevControl(maskwid=i_wid))
+            self.n.append(NextControl(maskwid=i_wid))
+
+        self.p = self.inpipe.p  # kinda annoying,
+        self.n = self.outpipe.n # use pipe in/out as this class in/out
+        self.pipe = self # for Arbiter to select the incoming prevcontrols
+        self.p_mux = InputPriorityArbiter(self, num_rows)
+
+    def __iter__(self):
+        for p in self.p:
+            yield from p
+        for n in self.n:
+            yield from n
+
+    def ports(self):
+        return list(self)
+
+    def setup_pseudoalus(self):
+        """setup_pseudoalus: establishes a suite of pseudo-alus
+        that look to all pipeline-intents-and-purposes just like the original
+        """
+        self.pseudoalus = []
+        for i in range(self.num_rows):
+            self.pseudoalus.append(ALUProxy(self.alu, self.p[i], self.n[i]))
+
+    def elaborate(self, platform):
+        m = Module()
+        m.submodules.alu = self.alu
+        m.submodules.p_mux = self.p_mux
+
+        mid = self.p_mux.m_id
+        print ("CombMuxIn mid", self, mid, p_len)
+
+        for i in range(self.num_rows):
+            r_busy = Signal(name="busy%d" % i)
+            result = _spec(self.stage.ospec, "r_tmp%d" % i)
+
+            # establish some combinatorial temporaries
+            n_i_ready = Signal(reset_less=True, name="n_i_rdy_data%d" % i)
+            p_i_valid_p_o_ready = Signal(reset_less=True, name="pivpor%d" % i)
+            p_i_valid = Signal(reset_less=True, name="p_i_valid%d" % i)
+            m.d.comb += [p_i_valid.eq(self.p.i_valid_test),
+                         n_i_ready.eq(self.n.i_ready_test),
+                         p_i_valid_p_o_ready.eq(p_i_valid & self.p.o_ready),
+            ]
+
+            # store result of processing in combinatorial temporary
+            m.d.comb += nmoperator.eq(result, self.data_r)
+
+            # previous valid and ready
+            with m.If(p_i_valid_p_o_ready):
+                o_data = self._postprocess(result) # XXX does nothing now
+                m.d.sync += [r_busy.eq(1),      # output valid
+                             nmoperator.eq(self.n.o_data, o_data), # output
+                            ]
+            # previous invalid or not ready, however next is accepting
+            with m.Elif(n_i_ready):
+                o_data = self._postprocess(result) # XXX does nothing now
+                m.d.sync += [nmoperator.eq(self.n.o_data, o_data)]
+                m.d.sync += r_busy.eq(0) # ...so set output invalid
+
+            m.d.comb += self.n.o_valid.eq(r_busy)
+            # if next is ready, so is previous
+            m.d.comb += self.p._o_ready.eq(n_i_ready)
+
+        return self.m
 
         return m
 
