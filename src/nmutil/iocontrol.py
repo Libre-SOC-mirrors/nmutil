@@ -150,14 +150,20 @@ class PrevControl(Elaboratable):
         * i_data : an input - MUST be added by the USER of this class
     """
 
-    def __init__(self, i_width=1, stage_ctl=False, maskwid=0, offs=0):
+    def __init__(self, i_width=1, stage_ctl=False, maskwid=0, offs=0,
+                       name=None):
+        if name is None:
+            name = ""
+        n_piv = "p_i_valid"+name
+        n_por = "p_o_ready"+name
+
         self.stage_ctl = stage_ctl
         self.maskwid = maskwid
         if maskwid:
-            self.mask_i = Signal(maskwid)                # prev   >>in  self
-            self.stop_i = Signal(maskwid)                # prev   >>in  self
-        self.i_valid = Signal(i_width, name="p_i_valid") # prev   >>in  self
-        self._o_ready = Signal(name="p_o_ready")         # prev   <<out self
+            self.mask_i = Signal(maskwid)              # prev   >>in  self
+            self.stop_i = Signal(maskwid)              # prev   >>in  self
+        self.i_valid = Signal(i_width, name=n_piv)     # prev   >>in  self
+        self._o_ready = Signal(name=n_por)             # prev   <<out self
         self.i_data = None # XXX MUST BE ADDED BY USER
         if stage_ctl:
             self.s_o_ready = Signal(name="p_s_o_rdy")    # prev   <<out self
@@ -243,14 +249,19 @@ class NextControl(Elaboratable):
         * i_ready: input from next stage indicating that it can accept data
         * o_data : an output - MUST be added by the USER of this class
     """
-    def __init__(self, stage_ctl=False, maskwid=0):
+    def __init__(self, stage_ctl=False, maskwid=0, name=None):
+        if name is None:
+            name = ""
+        n_nov = "n_o_valid"+name
+        n_nir = "n_i_ready"+name
+
         self.stage_ctl = stage_ctl
         self.maskwid = maskwid
         if maskwid:
-            self.mask_o = Signal(maskwid)       # self out>>  next
-            self.stop_o = Signal(maskwid)       # self out>>  next
-        self.o_valid = Signal(name="n_o_valid") # self out>>  next
-        self.i_ready = Signal(name="n_i_ready") # self <<in   next
+            self.mask_o = Signal(maskwid) # self out>>  next
+            self.stop_o = Signal(maskwid) # self out>>  next
+        self.o_valid = Signal(name=n_nov) # self out>>  next
+        self.i_ready = Signal(name=n_nir) # self <<in   next
         self.o_data = None # XXX MUST BE ADDED BY USER
         #if self.stage_ctl:
         self.d_valid = Signal(reset=1) # INTERNAL (data valid)
