@@ -48,12 +48,12 @@ class Visitor2:
         if not isinstance(o, Sequence):
             o, i = [o], [i]
         for (ao, ai) in zip(o, i):
-            print ("visit", ao, ai)
-            print ("    isinstance Record(ao)", isinstance(ao, Record))
-            print ("    isinstance ArrayProxy(ao)",
-                        isinstance(ao, ArrayProxy))
-            print ("    isinstance Value(ai)",
-                        isinstance(ai, Value))
+            # print ("visit", ao, ai)
+            # print ("    isinstance Record(ao)", isinstance(ao, Record))
+            # print ("    isinstance ArrayProxy(ao)",
+            #            isinstance(ao, ArrayProxy))
+            # print ("    isinstance Value(ai)",
+            #            isinstance(ai, Value))
             if isinstance(ao, Record):
                 yield from self.record_iter2(ao, ai)
             elif isinstance(ao, ArrayProxy) and not isinstance(ai, Value):
@@ -66,12 +66,12 @@ class Visitor2:
 
     def dict_iter2(self, o, i):
         for (k, v) in o.items():
-            print ("d-iter", v, i[k])
+            # print ("d-iter", v, i[k])
             yield (v, i[k])
         return res
 
     def _not_quite_working_with_all_unit_tests_record_iter2(self, ao, ai):
-        print ("record_iter2", ao, ai, type(ao), type(ai))
+        # print ("record_iter2", ao, ai, type(ao), type(ai))
         if isinstance(ai, Value):
             if isinstance(ao, Sequence):
                 ao, ai = [ao], [ai]
@@ -102,16 +102,16 @@ class Visitor2:
             yield from self.iterator2(ao.fields[field_name], val)
 
     def arrayproxy_iter2(self, ao, ai):
-        print ("arrayproxy_iter2", ai.ports(), ai, ao)
+        # print ("arrayproxy_iter2", ai.ports(), ai, ao)
         for p in ai.ports():
-            print ("arrayproxy - p", p, p.name, ao)
+            # print ("arrayproxy - p", p, p.name, ao)
             op = getattr(ao, p.name)
             yield from self.iterator2(op, p)
 
     def arrayproxy_iter3(self, ao, ai):
-        print ("arrayproxy_iter3", ao.ports(), ai, ao)
+        # print ("arrayproxy_iter3", ao.ports(), ai, ao)
         for p in ao.ports():
-            print ("arrayproxy - p", p, p.name, ao)
+            # print ("arrayproxy - p", p, p.name, ao)
             op = getattr(ao, p.name)
             yield from self.iterator2(op, p)
 
