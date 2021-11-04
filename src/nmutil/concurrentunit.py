@@ -173,30 +173,41 @@ class ReservationStations(Elaboratable):
 class ReservationStations2(Elaboratable):
     """ Reservation-Station pipeline
 
-        Input: num_rows - number of input and output Reservation Stations
+        Input:
 
-        Requires: the addition of an "alu" object, from which ispec and ospec
-        are taken, and inpipe and outpipe are connected to it
+        :alu: - an ALU to be "managed" by these ReservationStations
+        :num_rows: - number of input and output Reservation Stations
 
-        * fan-in on inputs (an array of BaseData: a,b,mid)
-        * ALU pipeline
-        * fan-out on outputs (an array of FPPackData: z,mid)
+        Note that the ALU data (in and out specs) right the way down the
+        entire chain *must* have a "muxid" data member.  this is picked
+        up and used to route data correctly from input RS to output RS.
 
-        Fan-in and Fan-out are combinatorial.
+        It is the responsibility of the USER of the ReservationStations
+        class to correctly set that muxid in each data packet to the
+        correct constant.  this could change in future.
     """
-    def __init__(self, num_rows):
+    def __init__(self, alu, num_rows):
         self.num_rows = nr = num_rows
         id_wid = num_rows.bit_length()
         self.p = []
         self.n = []
+        self.alu = alu
+        # create prev and next ready/valid and add replica of ALU data specs
         for i in range(p_len):
-            self.p.append(PrevControl(maskwid=i_wid))
-            self.n.append(NextControl(maskwid=i_wid))
+            suffix = "_%d" % i
+            p = PrevControl(maskwid=i_wid, name=suffix)
+            n = NextControl(maskwid=i_wid, name=suffix)
+            p.i_data, n.o_data = self.alu.new_specs("rs_%d" % i)
+            self.p.append(p)
+            self.n.append(n)
 
-        self.p = self.inpipe.p  # kinda annoying,
-        self.n = self.outpipe.n # use pipe in/out as this class in/out
         self.pipe = self # for Arbiter to select the incoming prevcontrols
         self.p_mux = InputPriorityArbiter(self, num_rows)
+
+        # set up pseudo-alus that look like a standard pipeline
+        self.pseudoalus = []
+        for i in range(self.num_rows):
+            self.pseudoalus.append(ALUProxy(self.alu, self.p[i], self.n[i]))
 
     def __iter__(self):
         for p in self.p:
@@ -207,63 +218,86 @@ class ReservationStations2(Elaboratable):
     def ports(self):
         return list(self)
 
-    def setup_pseudoalus(self):
-        """setup_pseudoalus: establishes a suite of pseudo-alus
-        that look to all pipeline-intents-and-purposes just like the original
-        """
-        self.pseudoalus = []
-        for i in range(self.num_rows):
-            self.pseudoalus.append(ALUProxy(self.alu, self.p[i], self.n[i]))
-
     def elaborate(self, platform):
         m = Module()
+        pe = PriorityEncoder(self.num_rows) # input priority picker
         m.submodules.alu = self.alu
-        m.submodules.p_mux = self.p_mux
+        m.submodules.selector = pe
 
-        mid = self.p_mux.m_id
-        print ("CombMuxIn mid", self, mid, p_len)
+        # Priority picker for one RS
+        self.active = Signal()
+        self.m_id = Signal.like(pe.o)
 
+        # ReservationStation status information, progressively updated in FSM
+        rsvd = Signal(self.num_rows) # indicates RS data in flight
+        sent = Signal(self.num_rows) # sent indicates data in pipeline
+        wait = Signal(self.num_rows) # the outputs are waiting for accept
+
+        # pick first non-reserved ReservationStation with data not already
+        # sent into the ALU
+        m.d.comb += pe.i.eq(~rsvd & ~sent)
+        m.d.comb += self.active.eq(~pe.n)   # encoder active (one input valid)
+        m.d.comb += self.m_id.eq(pe.o)       # output one active input
+
+        # mux in and mux out ids.  note that all data *must* have a muxid
+        mid = self.m_id                   # input mux selector
+        o_muxid = self.alu.n.o_data.muxid # output mux selector
+
+        # technically speaking this could be set permanently "HI".
+        # when all the ReservationStations outputs are waiting,
+        # the ALU cannot obviously accept any more data.  as the
+        # ALU is effectively "decoupled" from (managed by) the RSes,
+        # as long as there is sufficient RS allocation this should not
+        # be necessary, i.e. at no time should the ALU be given more inputs
+        # than there are outputs to accept (!) but just in case...
+        m.d.comb += self.alu.n.i_ready.eq(~wait.all())
+
+        #####
+        # input side
+        #####
+
+        # check if ALU is ready
+        n_i_ready = Signal(reset_less=True, name="n_i_rdy_data")
+        m.d.comb += alu_p_i_valid.eq(self.alu.p.i_valid_test)
+
+        # first, establish input: select one input to pass data to (p_mux)
         for i in range(self.num_rows):
-            r_busy = Signal(name="busy%d" % i)
-            result = _spec(self.stage.ospec, "r_tmp%d" % i)
-
-            # establish some combinatorial temporaries
-            n_i_ready = Signal(reset_less=True, name="n_i_rdy_data%d" % i)
-            p_i_valid_p_o_ready = Signal(reset_less=True, name="pivpor%d" % i)
-            p_i_valid = Signal(reset_less=True, name="p_i_valid%d" % i)
-            m.d.comb += [p_i_valid.eq(self.p.i_valid_test),
-                         n_i_ready.eq(self.n.i_ready_test),
-                         p_i_valid_p_o_ready.eq(p_i_valid & self.p.o_ready),
-            ]
-
-            # store result of processing in combinatorial temporary
-            m.d.comb += nmoperator.eq(result, self.data_r)
-
-            # previous valid and ready
-            with m.If(p_i_valid_p_o_ready):
-                o_data = self._postprocess(result) # XXX does nothing now
-                m.d.sync += [r_busy.eq(1),      # output valid
-                             nmoperator.eq(self.n.o_data, o_data), # output
-                            ]
-            # previous invalid or not ready, however next is accepting
-            with m.Elif(n_i_ready):
-                o_data = self._postprocess(result) # XXX does nothing now
-                m.d.sync += [nmoperator.eq(self.n.o_data, o_data)]
-                m.d.sync += r_busy.eq(0) # ...so set output invalid
-
-            m.d.comb += self.n.o_valid.eq(r_busy)
-            # if next is ready, so is previous
-            m.d.comb += self.p._o_ready.eq(n_i_ready)
-
-        return self.m
+            i_buf = _spec(self.alu.stage.ispec, "i_buf%d" % i) # input buffer
+            o_buf = _spec(self.alu.stage.ospec, "o_buf%d" % i) # output buffer
+            with m.FSM():
+                # indicate ready to accept data, and accept it if incoming
+                with m.State("ACCEPTING%d" % i):
+                    m.d.comb += self.p[i].o_ready.eq(1) # ready indicator
+                    with m.If(self.p[i].i_valid):  # valid data incoming
+                        m.d.sync += rsvd[i].eq(1)  # now reserved
+                        m.d.sync += nmoperator.eq(i_buf, self.p[i].i_data)
+                        m.next = "ACCEPTED%d" % i) # move to "accepted"
+                # now try to deliver to the ALU, but only if we are "picked"
+                with m.State("ACCEPTED%d" % i):
+                    with m.If(mid == i): # priority picker selected us
+                        with m.If(self.alu.p.o_ready):  # ALU can accept
+                            m.d.comb += self.alu.p.i_valid.eq(1) # transfer
+                            m.d.comb += nmoperator.eq(self.alu.p.i_data, i_buf)
+                            m.d.sync += sent[i].eq(1) # now reserved
+                            m.next = "WAITOUT%d" % i) # move to "wait output"
+                # waiting for output to appear on the ALU, take a copy
+                with m.State("WAITOUT%d" % i):
+                    with m.If(o_muxid == i): # when ALU output matches our RS
+                        with m.If(self.n.alu.o_valid):  # ALU can accept
+                            m.d.sync += nmoperator.eq(o_buf, self.alu.n.o_data)
+                            m.d.sync += wait[i].eq(1) # now waiting
+                            m.next = "SENDON%d" % i) # move to "send data on"
+                # waiting for "valid" indicator on RS output: deliver it
+                with m.State("SENDON%d" % i):
+                    with m.If(self.n[i].i_ready): # user is ready to receive
+                        m.d.comb += self.n[i].o_valid.eq(1) # indicate valid
+                        m.d.sync += wait[i].eq(0) # clear waiting
+                        m.d.sync += sent[i].eq(0) # and sending
+                        m.d.sync += rsvd[i].eq(0) # and reserved
+                        m.next = "ACCEPTING%d" % i) # and back to "accepting"
 
         return m
 
     def ports(self):
         return self._ports
 
-    def i_specfn(self):
-        return self.alu.ispec()
-
-    def o_specfn(self):
-        return self.alu.ospec()
