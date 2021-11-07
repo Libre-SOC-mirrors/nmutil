@@ -189,12 +189,15 @@ class ReservationStations2(Elaboratable):
         correct constant.  this could change in future.
 
     """
-    def __init__(self, alu, num_rows):
+    def __init__(self, alu, num_rows, alu_name=None):
+        if alu_name is None:
+            alu_name = "alu"
         self.num_rows = nr = num_rows
         id_wid = num_rows.bit_length()
         self.p = []
         self.n = []
         self.alu = alu
+        self.alu_name = alu_name
         # create prev and next ready/valid and add replica of ALU data specs
         for i in range(num_rows):
             suffix = "_%d" % i
@@ -223,7 +226,7 @@ class ReservationStations2(Elaboratable):
     def elaborate(self, platform):
         m = Module()
         pe = PriorityEncoder(self.num_rows) # input priority picker
-        m.submodules.alu = self.alu
+        m.submodules[self.alu_name] = self.alu
         m.submodules.selector = pe
         for i, (p, n) in enumerate(zip(self.p, self.n)):
             m.submodules["rs_p_%d" % i] = p
