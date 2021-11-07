@@ -266,7 +266,6 @@ class ReservationStations2(Elaboratable):
                 # indicate ready to accept data, and accept it if incoming
                 with m.State("ACCEPTING%d" % i):
                     m.d.comb += self.p[i].o_ready.eq(1) # ready indicator
-                    m.d.sync += self.n[i].o_valid.eq(0) # invalidate output
                     with m.If(self.p[i].i_valid):  # valid data incoming
                         m.d.sync += rsvd[i].eq(1)  # now reserved
                         m.d.sync += nmoperator.eq(i_buf, self.p[i].i_data)
@@ -289,11 +288,8 @@ class ReservationStations2(Elaboratable):
                 # waiting for "valid" indicator on RS output: deliver it
                 with m.State("SENDON%d" % i):
                     with m.If(self.n[i].i_ready): # user is ready to receive
-                        # XXX this should be combinatorial not sync
-                        #m.d.sync += self.n[i].o_valid.eq(1) # indicate valid
-                        #m.d.sync += nmoperator.eq(self.n[i].o_data, o_buf)
-                        m.d.sync += self.n[i].o_valid.eq(1) # indicate valid
-                        m.d.sync += nmoperator.eq(self.n[i].o_data, o_buf)
+                        m.d.comb += self.n[i].o_valid.eq(1) # indicate valid
+                        m.d.comb += nmoperator.eq(self.n[i].o_data, o_buf)
                         m.d.sync += wait[i].eq(0) # clear waiting
                         m.d.sync += sent[i].eq(0) # and sending
                         m.d.sync += rsvd[i].eq(0) # and reserved
