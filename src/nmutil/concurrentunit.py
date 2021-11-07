@@ -172,7 +172,8 @@ class ReservationStations(Elaboratable):
 
 
 class ReservationStations2(Elaboratable):
-    """ Reservation-Station pipeline
+    """ Reservation-Station pipeline.  Manages an ALU and makes it look like
+        there are multiple of them, presenting the same ready/valid API
 
         Input:
 
@@ -186,6 +187,7 @@ class ReservationStations2(Elaboratable):
         It is the responsibility of the USER of the ReservationStations
         class to correctly set that muxid in each data packet to the
         correct constant.  this could change in future.
+
     """
     def __init__(self, alu, num_rows):
         self.num_rows = nr = num_rows
@@ -264,12 +266,25 @@ class ReservationStations2(Elaboratable):
             i_buf, o_buf = self.alu.new_specs("buf%d" % i) # buffers
             with m.FSM():
                 # indicate ready to accept data, and accept it if incoming
+                # BUT, if there is an opportunity to send on immediately
+                # to the ALU, take it early (combinatorial)
                 with m.State("ACCEPTING%d" % i):
                     m.d.comb += self.p[i].o_ready.eq(1) # ready indicator
                     with m.If(self.p[i].i_valid):  # valid data incoming
                         m.d.sync += rsvd[i].eq(1)  # now reserved
-                        m.d.sync += nmoperator.eq(i_buf, self.p[i].i_data)
-                        m.next = "ACCEPTED%d" % i # move to "accepted"
+                        # a unique opportunity: the ALU happens to be free
+                        with m.If(mid == i): # picker selected us
+                            with m.If(self.alu.p.o_ready):  # ALU can accept
+                                m.d.comb += self.alu.p.i_valid.eq(1) # transfer
+                                m.d.comb += nmoperator.eq(self.alu.p.i_data,
+                                                         self.p[i].i_data)
+                                m.d.sync += sent[i].eq(1) # now reserved
+                                m.next = "WAITOUT%d" % i # move to "wait output"
+                        with m.Else():
+                            # nope. ALU wasn't free. try next cycle(s)
+                            m.d.sync += nmoperator.eq(i_buf, self.p[i].i_data)
+                            m.next = "ACCEPTED%d" % i # move to "accepted"
+
                 # now try to deliver to the ALU, but only if we are "picked"
                 with m.State("ACCEPTED%d" % i):
                     with m.If(mid == i): # picker selected us
@@ -278,13 +293,29 @@ class ReservationStations2(Elaboratable):
                             m.d.comb += nmoperator.eq(self.alu.p.i_data, i_buf)
                             m.d.sync += sent[i].eq(1) # now reserved
                             m.next = "WAITOUT%d" % i # move to "wait output"
+
                 # waiting for output to appear on the ALU, take a copy
+                # BUT, again, if there is an opportunity to send on
+                # immediately, take it (combinatorial)
                 with m.State("WAITOUT%d" % i):
                     with m.If(o_muxid == i): # when ALU output matches our RS
                         with m.If(self.alu.n.o_valid):  # ALU can accept
-                            m.d.sync += nmoperator.eq(o_buf, self.alu.n.o_data)
-                            m.d.sync += wait[i].eq(1) # now waiting
-                            m.next = "SENDON%d" % i # move to "send data on"
+                            # second unique opportunity: the RS is ready
+                            with m.If(self.n[i].i_ready): # ready to receive
+                                m.d.comb += self.n[i].o_valid.eq(1) # valid
+                                m.d.comb += nmoperator.eq(self.n[i].o_data,
+                                                          self.alu.n.o_data)
+                                m.d.sync += wait[i].eq(0) # clear waiting
+                                m.d.sync += sent[i].eq(0) # and sending
+                                m.d.sync += rsvd[i].eq(0) # and reserved
+                                m.next = "ACCEPTING%d" % i # back to "accepting"
+                            with m.Else():
+                                # nope. RS wasn't ready. try next cycles
+                                m.d.sync += wait[i].eq(1) # now waiting
+                                m.d.sync += nmoperator.eq(o_buf,
+                                                          self.alu.n.o_data)
+                                m.next = "SENDON%d" % i # move to "send data on"
+
                 # waiting for "valid" indicator on RS output: deliver it
                 with m.State("SENDON%d" % i):
                     with m.If(self.n[i].i_ready): # user is ready to receive
