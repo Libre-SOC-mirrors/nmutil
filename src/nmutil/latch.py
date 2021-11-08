@@ -47,6 +47,7 @@ def latchregister(m, incoming, outgoing, settrue, name=None):
     m.d.comb += outgoing.eq(Mux(settrue, incoming, reg))
     with m.If(settrue): # pass in some kind of expression/condition here
         m.d.sync += reg.eq(incoming)      # latch input into register
+    return reg
 
 
 def mkname(prefix, suffix):
