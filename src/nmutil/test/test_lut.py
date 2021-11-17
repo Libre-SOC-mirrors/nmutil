@@ -12,7 +12,7 @@ from nmigen.hdl.ast import AnyConst, Assert, Signal
 from nmigen.hdl.dsl import Module
 from nmigen.hdl.ir import Fragment
 from nmutil.get_test_path import get_test_path
-from nmutil.lut import BitwiseMux, BitwiseLut
+from nmutil.lut import BitwiseMux, BitwiseLut, TreeBitwiseLut
 from nmigen.sim import Simulator, Delay
 
 
@@ -121,28 +121,29 @@ class TestBitwiseMux(unittest.TestCase):
 
 
 class TestBitwiseLut(unittest.TestCase):
-    def test(self):
-        dut = BitwiseLut(3, 16)
+    def tst(self, cls):
+        dut = cls(3, 16)
         mask = 2 ** dut.width - 1
         lut_mask = 2 ** dut.lut.width - 1
-        mux_inputs = {k: s.name for k, s in dut._mux_inputs.items()}
-        self.assertEqual(mux_inputs, {
-            (): 'mux_input_0bxxx',
-            (False,): 'mux_input_0bxx0',
-            (False, False): 'mux_input_0bx00',
-            (False, False, False): 'mux_input_0b000',
-            (False, False, True): 'mux_input_0b100',
-            (False, True): 'mux_input_0bx10',
-            (False, True, False): 'mux_input_0b010',
-            (False, True, True): 'mux_input_0b110',
-            (True,): 'mux_input_0bxx1',
-            (True, False): 'mux_input_0bx01',
-            (True, False, False): 'mux_input_0b001',
-            (True, False, True): 'mux_input_0b101',
-            (True, True): 'mux_input_0bx11',
-            (True, True, False): 'mux_input_0b011',
-            (True, True, True): 'mux_input_0b111'
-        })
+        if cls is TreeBitwiseLut:
+            mux_inputs = {k: s.name for k, s in dut._mux_inputs.items()}
+            self.assertEqual(mux_inputs, {
+                (): 'mux_input_0bxxx',
+                (False,): 'mux_input_0bxx0',
+                (False, False): 'mux_input_0bx00',
+                (False, False, False): 'mux_input_0b000',
+                (False, False, True): 'mux_input_0b100',
+                (False, True): 'mux_input_0bx10',
+                (False, True, False): 'mux_input_0b010',
+                (False, True, True): 'mux_input_0b110',
+                (True,): 'mux_input_0bxx1',
+                (True, False): 'mux_input_0bx01',
+                (True, False, False): 'mux_input_0b001',
+                (True, False, True): 'mux_input_0b101',
+                (True, True): 'mux_input_0bx11',
+                (True, True, False): 'mux_input_0b011',
+                (True, True, True): 'mux_input_0b111'
+            })
 
         def case(in0, in1, in2, lut):
             expected = 0
@@ -179,8 +180,8 @@ class TestBitwiseLut(unittest.TestCase):
             sim.add_process(process)
             sim.run()
 
-    def test_formal(self):
-        dut = BitwiseLut(3, 16)
+    def tst_formal(self, cls):
+        dut = cls(3, 16)
         m = Module()
         m.submodules.dut = dut
         m.d.comb += dut.inputs[0].eq(AnyConst(dut.width))
@@ -195,6 +196,18 @@ class TestBitwiseLut(unittest.TestCase):
                 with m.If(lut_index == j):
                     m.d.comb += Assert(dut.lut[j] == dut.output[i])
         formal(self, m)
+
+    def test(self):
+        self.tst(BitwiseLut)
+
+    def test_tree(self):
+        self.tst(TreeBitwiseLut)
+
+    def test_formal(self):
+        self.tst_formal(BitwiseLut)
+
+    def test_tree_formal(self):
+        self.tst_formal(TreeBitwiseLut)
 
 
 if __name__ == "__main__":

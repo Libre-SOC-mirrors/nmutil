@@ -1,7 +1,7 @@
 # SPDX-License-Identifier: LGPL-3-or-later
 # See Notices.txt for copyright information
 
-from nmigen.hdl.ast import Repl, Signal
+from nmigen.hdl.ast import Array, Cat, Repl, Signal
 from nmigen.hdl.dsl import Module
 from nmigen.hdl.ir import Elaboratable
 
@@ -25,6 +25,35 @@ class BitwiseMux(Elaboratable):
 
 
 class BitwiseLut(Elaboratable):
+    def __init__(self, input_count, width):
+        assert isinstance(input_count, int)
+        assert isinstance(width, int)
+        self.input_count = input_count
+        self.width = width
+
+        def inp(i):
+            return Signal(width, name=f"input{i}")
+        self.inputs = tuple(inp(i) for i in range(input_count))
+        self.output = Signal(width)
+        self.lut = Signal(2 ** input_count)
+
+        def lut_index(i):
+            return Signal(input_count, name=f"lut_index_{i}")
+        self._lut_indexes = [lut_index(i) for i in range(width)]
+
+    def elaborate(self, platform):
+        m = Module()
+        lut = Array(self.lut[i] for i in range(self.lut.width))
+        for i in range(self.width):
+            for j in range(self.input_count):
+                m.d.comb += self._lut_indexes[i][j].eq(self.inputs[j][i])
+            m.d.comb += self.output[i].eq(lut[self._lut_indexes[i]])
+        return m
+
+
+class TreeBitwiseLut(Elaboratable):
+    """tree-based version of BitwiseLut"""
+
     def __init__(self, input_count, width):
         assert isinstance(input_count, int)
         assert isinstance(width, int)
