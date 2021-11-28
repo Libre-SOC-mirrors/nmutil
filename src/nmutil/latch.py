@@ -62,24 +62,25 @@ class SRLatch(Elaboratable):
         self.llen = llen
         s_n, r_n = mkname("s", name), mkname("r", name)
         q_n, qn_n = mkname("q", name), mkname("qn", name)
+        qint = mkname("qint", name)
         qlq_n = mkname("qlq", name)
         self.s = Signal(llen, name=s_n, reset=0)
         self.r = Signal(llen, name=r_n, reset=(1<<llen)-1) # defaults to off
         self.q = Signal(llen, name=q_n, reset_less=True)
         self.qn = Signal(llen, name=qn_n, reset_less=True)
         self.qlq = Signal(llen, name=qlq_n, reset_less=True)
+        self.q_int = Signal(llen, name=qint, reset_less=True)
 
     def elaborate(self, platform):
         m = Module()
-        q_int = Signal(self.llen)
 
-        m.d.sync += q_int.eq((q_int & ~self.r) | self.s)
+        m.d.sync += self.q_int.eq((self.q_int & ~self.r) | self.s)
         if self.sync:
-            m.d.comb += self.q.eq(q_int)
+            m.d.comb += self.q.eq(self.q_int)
         else:
-            m.d.comb += self.q.eq((q_int & ~self.r) | self.s)
+            m.d.comb += self.q.eq((self.q_int & ~self.r) | self.s)
         m.d.comb += self.qn.eq(~self.q)
-        m.d.comb += self.qlq.eq(self.q | q_int) # useful output
+        m.d.comb += self.qlq.eq(self.q | self.q_int) # useful output
 
         return m
 
