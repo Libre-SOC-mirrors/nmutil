@@ -188,6 +188,7 @@ class ReservationStations2(Elaboratable):
         class to correctly set that muxid in each data packet to the
         correct constant.  this could change in future.
 
+        FAILING TO SET THE MUXID IS GUARANTEED TO RESULT IN CORRUPTED DATA.
     """
     def __init__(self, alu, num_rows, alu_name=None):
         if alu_name is None:
