@@ -20,6 +20,7 @@ class FHDLTestCase(unittest.TestCase):
     def assertRepr(self, obj, repr_str):
         if isinstance(obj, list):
             obj = Statement.cast(obj)
+
         def prepare_repr(repr_str):
             repr_str = re.sub(r"\s+",   " ",  repr_str)
             repr_str = re.sub(r"\( (?=\()", "(", repr_str)
@@ -70,7 +71,7 @@ class FHDLTestCase(unittest.TestCase):
             # A mix of BMC and k-induction, as per personal
             # communication with Clifford Wolf.
             script = "setattr -unset init w:* a:nmigen.sample_reg %d"
-            mode   = "bmc"
+            mode = "bmc"
         else:
             script = ""
 
@@ -105,4 +106,3 @@ class FHDLTestCase(unittest.TestCase):
             stdout, stderr = proc.communicate(config)
             if proc.returncode != 0:
                 self.fail("Formal verification failed:\n" + stdout)
-
