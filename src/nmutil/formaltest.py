@@ -1,9 +1,7 @@
-import os
 import re
 import shutil
 import subprocess
 import textwrap
-import traceback
 import unittest
 import warnings
 from contextlib import contextmanager
@@ -11,6 +9,8 @@ from contextlib import contextmanager
 from nmigen.hdl.ir import Fragment
 from nmigen.back import rtlil
 from nmigen._toolchain import require_tool
+
+from nmutil.get_test_path import get_test_path
 
 
 __all__ = ["FHDLTestCase"]
@@ -53,19 +53,14 @@ class FHDLTestCase(unittest.TestCase):
         if msg is not None:
             self.assertEqual(str(warns[0].message), msg)
 
-    def assertFormal(self, spec, mode="bmc", depth=1, solver=""):
-        caller, *_ = traceback.extract_stack(limit=2)
-        spec_root, _ = os.path.splitext(caller.filename)
-        spec_dir = os.path.dirname(spec_root)
-        spec_name = "{}_{}".format(
-            os.path.basename(spec_root).replace("test_", "spec_"),
-            caller.name.replace("test_", "")
-        )
+    def assertFormal(self, spec, mode="bmc", depth=1, solver="",
+                     base_path="formal_test_temp"):
+        path = get_test_path(self, base_path)
 
         # The sby -f switch seems not fully functional when sby is
         # reading from stdin.
-        if os.path.exists(os.path.join(spec_dir, spec_name)):
-            shutil.rmtree(os.path.join(spec_dir, spec_name))
+        shutil.rmtree(path, ignore_errors=True)
+        path.mkdir(parents=True)
 
         if mode == "hybrid":
             # A mix of BMC and k-induction, as per personal
@@ -98,8 +93,8 @@ class FHDLTestCase(unittest.TestCase):
             script=script,
             rtlil=rtlil.convert(Fragment.get(spec, platform="formal"))
         )
-        with subprocess.Popen([require_tool("sby"), "-f", "-d", spec_name],
-                              cwd=spec_dir,
+        with subprocess.Popen([require_tool("sby"), "-d", "job"],
+                              cwd=path,
                               universal_newlines=True,
                               stdin=subprocess.PIPE,
                               stdout=subprocess.PIPE) as proc:
