@@ -3,8 +3,6 @@ import shutil
 import subprocess
 import textwrap
 import unittest
-import warnings
-from contextlib import contextmanager
 from nmigen.hdl.ast import Statement
 from nmigen.hdl.ir import Fragment
 from nmigen.back import rtlil
@@ -26,31 +24,6 @@ class FHDLTestCase(unittest.TestCase):
             repr_str = re.sub(r"\) (?=\))", ")", repr_str)
             return repr_str.strip()
         self.assertEqual(prepare_repr(repr(obj)), prepare_repr(repr_str))
-
-    @contextmanager
-    def assertRaises(self, exception, msg=None):
-        with super().assertRaises(exception) as cm:
-            yield
-        if msg is not None:
-            # WTF? unittest.assertRaises is completely broken.
-            self.assertEqual(str(cm.exception), msg)
-
-    @contextmanager
-    def assertRaisesRegex(self, exception, regex=None):
-        with super().assertRaises(exception) as cm:
-            yield
-        if regex is not None:
-            # unittest.assertRaisesRegex also seems broken...
-            self.assertRegex(str(cm.exception), regex)
-
-    @contextmanager
-    def assertWarns(self, category, msg=None):
-        with warnings.catch_warnings(record=True) as warns:
-            yield
-        self.assertEqual(len(warns), 1)
-        self.assertEqual(warns[0].category, category)
-        if msg is not None:
-            self.assertEqual(str(warns[0].message), msg)
 
     def assertFormal(self, spec, mode="bmc", depth=1, solver="",
                      base_path="formal_test_temp"):
