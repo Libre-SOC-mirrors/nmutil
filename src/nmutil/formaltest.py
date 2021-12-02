@@ -5,11 +5,10 @@ import textwrap
 import unittest
 import warnings
 from contextlib import contextmanager
-
+from nmigen.hdl.ast import Statement
 from nmigen.hdl.ir import Fragment
 from nmigen.back import rtlil
 from nmigen._toolchain import require_tool
-
 from nmutil.get_test_path import get_test_path
 
 
