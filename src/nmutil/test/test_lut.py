@@ -4,13 +4,9 @@
 from contextlib import contextmanager
 import unittest
 from hashlib import sha256
-import shutil
-import subprocess
-from nmigen.back import rtlil
-import textwrap
 from nmigen.hdl.ast import AnyConst, Assert, Signal
 from nmigen.hdl.dsl import Module
-from nmigen.hdl.ir import Fragment
+from nmutil.formaltest import FHDLTestCase
 from nmutil.get_test_path import get_test_path
 from nmutil.lut import BitwiseMux, BitwiseLut, TreeBitwiseLut
 from nmigen.sim import Simulator, Delay
@@ -29,43 +25,6 @@ def do_sim(test_case, dut, traces=()):
         yield sim
 
 
-# copied from ieee754fpu/src/ieee754/partitioned_signal_tester.py
-def formal(test_case, hdl, *, base_path="formal_test_temp"):
-    hdl = Fragment.get(hdl, platform="formal")
-    path = get_test_path(test_case, base_path)
-    shutil.rmtree(path, ignore_errors=True)
-    path.mkdir(parents=True)
-    sby_name = "config.sby"
-    sby_file = path / sby_name
-
-    sby_file.write_text(textwrap.dedent(f"""\
-    [options]
-    mode prove
-    depth 1
-    wait on
-
-    [engines]
-    smtbmc
-
-    [script]
-    read_rtlil top.il
-    prep
-
-    [file top.il]
-    {rtlil.convert(hdl)}
-    """), encoding="utf-8")
-    sby = shutil.which('sby')
-    assert sby is not None
-    with subprocess.Popen(
-        [sby, sby_name],
-        cwd=path, text=True, encoding="utf-8",
-        stdin=subprocess.DEVNULL, stdout=subprocess.PIPE
-    ) as p:
-        stdout, stderr = p.communicate()
-        if p.returncode != 0:
-            test_case.fail(f"Formal failed:\n{stdout}")
-
-
 def hash_256(v):
     return int.from_bytes(
         sha256(bytes(v, encoding='utf-8')).digest(),
@@ -73,7 +32,7 @@ def hash_256(v):
     )
 
 
-class TestBitwiseMux(unittest.TestCase):
+class TestBitwiseMux(FHDLTestCase):
     def test(self):
         width = 2
         dut = BitwiseMux(width)
@@ -117,10 +76,10 @@ class TestBitwiseMux(unittest.TestCase):
                 m.d.comb += Assert(dut.t[i] == dut.output[i])
             with m.Else():
                 m.d.comb += Assert(dut.f[i] == dut.output[i])
-        formal(self, m)
+        self.assertFormal(m)
 
 
-class TestBitwiseLut(unittest.TestCase):
+class TestBitwiseLut(FHDLTestCase):
     def tst(self, cls):
         dut = cls(3, 16)
         mask = 2 ** dut.width - 1
@@ -195,7 +154,7 @@ class TestBitwiseLut(unittest.TestCase):
             for j in range(dut.lut.width):
                 with m.If(lut_index == j):
                     m.d.comb += Assert(dut.lut[j] == dut.output[i])
-        formal(self, m)
+        self.assertFormal(m)
 
     def test(self):
         self.tst(BitwiseLut)
