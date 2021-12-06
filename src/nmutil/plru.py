@@ -1,9 +1,10 @@
 # based on ariane plru, from tlb.sv
 
-from nmigen import Signal, Module, Cat, Const, Repl
+from nmigen import Signal, Module, Cat, Const, Repl, Array
 from nmigen.hdl.ir import Elaboratable
 from nmigen.cli import rtlil
 from nmigen.utils import log2_int
+from nmigen.lib.coding import Decoder
 
 
 class PLRU(Elaboratable):
@@ -109,8 +110,74 @@ class PLRU(Elaboratable):
         return [self.acc_en, self.lru_o, self.acc_i]
 
 
+class PLRUs(Elaboratable):
+    def __init__(self, n_plrus, n_bits):
+        self.n_plrus = n_plrus
+        self.n_bits = n_bits
+        self.valid = Signal()
+        self.way = Signal(n_bits)
+        self.index = Signal(n_plrus.bit_length())
+        self.isel = Signal(n_plrus.bit_length())
+        self.o_index = Signal(n_bits)
+
+    def elaborate(self, platform):
+        """Generate TLB PLRUs
+        """
+        m = Module()
+        comb = m.d.comb
+
+        if self.n_plrus == 0:
+            return m
+
+        # Binary-to-Unary one-hot, enabled by valid
+        m.submodules.te = te = Decoder(self.n_plrus)
+        comb += te.n.eq(~self.valid)
+        comb += te.i.eq(self.index)
+
+        out = Array(Signal(self.n_bits, name="plru_out%d" % x) \
+                             for x in range(self.n_plrus))
+
+        for i in range(self.n_plrus):
+            # PLRU interface
+            m.submodules["plru_%d" % i] = plru = PLRU(self.n_bits)
+
+            comb += plru.acc_en.eq(te.o[i])
+            comb += plru.acc_i.eq(self.way)
+            comb += out[i].eq(plru.lru_o)
+
+        # select output based on index
+        comb += self.o_index.eq(out[self.isel])
+
+        return m
+
+    def ports(self):
+        return [self.valid, self.way, self.index, self.isel, self.o_index]
+
+
 if __name__ == '__main__':
     dut = PLRU(8)
     vl = rtlil.convert(dut, ports=dut.ports())
     with open("test_plru.il", "w") as f:
         f.write(vl)
+
+
+    dut = PLRUs(4, 2)
+    vl = rtlil.convert(dut, ports=dut.ports())
+    with open("test_plrus.il", "w") as f:
+        f.write(vl)
+
+
+
+if __name__ == '__main__':
+    dut = PLRU(2)
+    vl = rtlil.convert(dut, ports=dut.ports())
+    with open("test_plru.il", "w") as f:
+        f.write(vl)
+
+
+    dut = PLRUs(4, 2)
+    vl = rtlil.convert(dut, ports=dut.ports())
+    with open("test_plrus.il", "w") as f:
+        f.write(vl)
+
+
