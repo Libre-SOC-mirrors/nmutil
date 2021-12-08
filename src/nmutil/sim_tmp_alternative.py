@@ -47,7 +47,7 @@ nmigen_sim_environ_variable = os.environ.get("NMIGEN_SIM_MODE") \
 
 def Simulator(*args, **kwargs):
     """Wrapper that allows run-time selection of simulator engine"""
-    if detected_new_api:
+    if detected_new_api and 'engine' not in kwargs:
         kwargs['engine'] = nmigen_sim_environ_variable
     return RealSimulator(*args, **kwargs)
 
