@@ -1,7 +1,7 @@
 # SPDX-License-Identifier: LGPL-3-or-later
 # See Notices.txt for copyright information
 
-from nmigen.hdl.ast import Array, Cat, Repl, Signal
+from nmigen.hdl.ast import Array, Repl, Signal
 from nmigen.hdl.dsl import Module
 from nmigen.hdl.ir import Elaboratable
 
