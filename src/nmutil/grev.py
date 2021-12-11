@@ -18,7 +18,7 @@ class GRev(Elaboratable):
     """
 
     def __init__(self, log2_width):
-        assert isinstance(log2_width, int)
+        assert isinstance(log2_width, int) # TODO: remove. unnecessary.
         self.log2_width = log2_width
         self.width = 1 << log2_width
 
@@ -31,13 +31,16 @@ class GRev(Elaboratable):
         m = Module()
 
         # XXX internal signals do not need to be members of the module.
-        # more to the point: why is the array needed at all?
+        # more to the point: why is the array needed at all?  just
+        # assign step_i = self.input outside the loop, create one
+        # step_o Signal at the start and assign step_i=step_o at the end
         def step(i):
             return Signal(self.width, name=f"step{i}")
         _steps = [step(i) for i in range(self.log2_width)]
 
         for i, step_o in enumerate(_steps):
             step_i = self.input if i == 0 else _steps[i - 1]
+            # TODO explain that chunk swap-sizes jump by a power2 each time
             chunk_size = 1 << i
             # TODO comment that this is creating the mux-swapper
             with m.If(self.chunk_sizes[i]):
