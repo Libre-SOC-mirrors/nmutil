@@ -38,6 +38,8 @@ class GRev(Elaboratable):
             return Signal(self.width, name=f"step{i}")
         _steps = [step(i) for i in range(self.log2_width)]
 
+        # TODO: comment that this creates a full combinatorial chain
+        # of RADIX-2 butterfly-network "swappers"
         for i, step_o in enumerate(_steps):
             step_i = self.input if i == 0 else _steps[i - 1]
             # TODO explain that chunk swap-sizes jump by a power2 each time
