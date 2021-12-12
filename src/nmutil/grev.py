@@ -36,9 +36,9 @@ class GRev(Elaboratable):
 
         # TODO: comment that this creates a full combinatorial chain
         # of RADIX-2 butterfly-network "swappers"
-        for i, step_o in enumerate(_steps):
+        for i in range(self.log2_width):
             step_o = Signal(self.width, name="step_%d" % i)
-            _steps.append(step_o)
+            _steps.append(step_o) # accumulate steps (test purposes only)
             # TODO explain that chunk swap-sizes jump by a power2 each time
             chunk_size = 1 << i
             # TODO comment that this is creating the mux-swapper
