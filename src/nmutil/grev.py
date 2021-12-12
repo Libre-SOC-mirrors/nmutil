@@ -30,29 +30,31 @@ class GRev(Elaboratable):
     def elaborate(self, platform):
         m = Module()
 
-        # XXX internal signals do not need to be members of the module.
-        # more to the point: why is the array needed at all?  just
-        # assign step_i = self.input outside the loop, create one
-        # step_o Signal at the start and assign step_i=step_o at the end
-        def step(i):
-            return Signal(self.width, name=f"step{i}")
-        _steps = [step(i) for i in range(self.log2_width)]
+        _steps = [] # cumulative list of steps (for unit test purposes only)
+
+        step_i = self.input # start combinatorial chain with the input
 
         # TODO: comment that this creates a full combinatorial chain
         # of RADIX-2 butterfly-network "swappers"
         for i, step_o in enumerate(_steps):
-            step_i = self.input if i == 0 else _steps[i - 1]
+            step_o = Signal(self.width, name="step_%d" % i)
+            _steps.append(step_o)
             # TODO explain that chunk swap-sizes jump by a power2 each time
             chunk_size = 1 << i
             # TODO comment that this is creating the mux-swapper
             with m.If(self.chunk_sizes[i]):
-                # swap path
+                # the mux swap path
                 for j in range(self.width):
                     # TODO explain what this XOR does
                     m.d.comb += step_o[j].eq(step_i[j ^ chunk_size])
             with m.Else():
-                # straight path
+                # the mux straight path
                 m.d.comb += step_o.eq(step_i)
+            step_i = step_o # for next loop, to create the combinatorial chain
         # TODO comment that the last "step" is the output
-        m.d.comb += self.output.eq(_steps[-1])
+        m.d.comb += self.output.eq(_steps[-1]) # TODO: replace with step_o
+
+        # give access to the steps list for testing purposes
+        self._steps = _steps
+
         return m
