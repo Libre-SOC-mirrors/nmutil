@@ -60,7 +60,7 @@ class GRev(Elaboratable):
     to a common barrel-shifter/rotater design.
 
     The 2:1 muxes are arranged to calculate successive `grev`-ed values where
-    the intermediate values corresponding `chunk_sizes` is progressively
+    each intermediate value's corresponding `chunk_sizes` is progressively
     changed from all zeros to the input `chunk_sizes` by adding one bit at a
     time from the LSB to MSB.
 
