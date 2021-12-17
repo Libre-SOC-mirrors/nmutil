@@ -2,9 +2,8 @@
 # Copyright Jacob Lifshay ADD EMAIL ADDRESS ADD YEAR - FOLLOW STANDARD PRACTICE
 # Copyright (C) 2021 Luke Kenneth Casson Leighton <lkcl@lkcl.net>
 
-# TODO(lkcl): add NGI POINTER funding notice, idk what we need for that...
-# realised it is actually NLnet (not NGI) so just "funded by NLnet Assure
-# and put URL)
+# Funded by NLnet Assure Programme 2021-02-052, https://nlnet.nl/assure part
+# of Horizon 2020 EU Programme 957073.
 
 
 """Generalized bit-reverse. See `GRev` for docs. - no: move the

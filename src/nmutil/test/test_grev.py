@@ -2,6 +2,9 @@
 # XXX - this is insufficient See Notices.txt for copyright information - XXX
 # XXX TODO: add individual copyright
 
+# Funded by NLnet Assure Programme 2021-02-052, https://nlnet.nl/assure part
+# of Horizon 2020 EU Programme 957073.
+
 import unittest
 from nmigen.hdl.ast import AnyConst, Assert
 from nmigen.hdl.dsl import Module
