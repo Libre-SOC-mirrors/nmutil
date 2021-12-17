@@ -1,5 +1,11 @@
 # SPDX-License-Identifier: LGPL-3-or-later
-# See Notices.txt for copyright information
+"""
+Bitwise logic operators implemented using a look-up table, like LUTs in
+FPGAs. Inspired by x86's `vpternlog[dq]` instructions.
+
+https://bugs.libre-soc.org/show_bug.cgi?id=745
+https://www.felixcloutier.com/x86/vpternlogd:vpternlogq
+"""
 
 from nmigen.hdl.ast import Array, Cat, Repl, Signal
 from nmigen.hdl.dsl import Module
@@ -25,15 +31,30 @@ class BitwiseMux(Elaboratable):
 
 
 class BitwiseLut(Elaboratable):
+    """ Bitwise logic operators implemented using a look-up table, like LUTs in
+        FPGAs. Inspired by x86's `vpternlog[dq]` instructions.
+
+        Each output bit `i` is set to `lut[Cat(inp[i] for inp in self.inputs)]`
+    """
+
     def __init__(self, input_count, width):
+        """
+        input_count: int
+            the number of inputs. ternlog-style instructions have 3 inputs.
+        width: int
+            the number of bits in each input/output.
+        """
         self.input_count = input_count
         self.width = width
 
         def inp(i):
             return Signal(width, name=f"input{i}")
         self.inputs = tuple(inp(i) for i in range(input_count))
+        """ the inputs """
         self.output = Signal(width)
+        """ the output """
         self.lut = Signal(2 ** input_count)
+        """ the look-up table. Is `2 ** input_count` bits wide."""
 
     def elaborate(self, platform):
         m = Module()
@@ -45,7 +66,8 @@ class BitwiseLut(Elaboratable):
 
 
 class TreeBitwiseLut(Elaboratable):
-    """tree-based version of BitwiseLut"""
+    """ Tree-based version of BitwiseLut. See BitwiseLut for API documentation.
+    """
 
     def __init__(self, input_count, width):
         self.input_count = input_count
