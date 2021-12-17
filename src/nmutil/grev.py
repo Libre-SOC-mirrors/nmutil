@@ -19,19 +19,19 @@ from nmigen.hdl.ir import Elaboratable
 from nmigen.cli import rtlil
 
 
-def grev(input, chunk_sizes, log2_width):
+def grev(inval, chunk_sizes, log2_width):
     """XXX start comments here with no space
     Python reference implementation of generalized bit-reverse.
     See `GRev` for documentation.
     """
     # mask inputs into range
-    input &= 2 ** 2 ** log2_width - 1
+    inval &= 2 ** 2 ** log2_width - 1
     chunk_sizes &= 2 ** log2_width - 1
     # core algorithm:
     retval = 0
     for i in range(2 ** log2_width):
         # don't use `if` so this can be used with nmigen values
-        bit = (input & (1 << i)) != 0
+        bit = (inval & (1 << i)) != 0
         retval |= bit << (i ^ chunk_sizes)
     return retval
 
