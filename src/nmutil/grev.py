@@ -4,57 +4,92 @@
 # TODO add funding and explicit copyright notice (contractually required by
 # NGI POINTER)
 
+# TODO link to bugreport
+
 from nmigen.hdl.ast import Signal
 from nmigen.hdl.dsl import Module
 from nmigen.hdl.ir import Elaboratable
+from itertools import tee
 
-# TODO link to bugreport
+
+def pairwise(iterable):
+    """
+    itertools.pairwise, added in Python 3.10, copied here cuz we support 3.7+
+    https://docs.python.org/3.10/library/itertools.html#itertools.pairwise
+    """
+    # code copied from Python's docs
+    a, b = tee(iterable)
+    next(b, None)
+    return zip(a, b)
+
+
+def grev(input, chunk_sizes, log2_width):
+    """
+    Python reference implementation of generalized bit-reverse.
+    See `GRev` for documentation.
+    """
+    # mask inputs into range
+    input &= 2 ** 2 ** log2_width - 1
+    chunk_sizes &= 2 ** log2_width - 1
+    # core algorithm:
+    retval = 0
+    for i in range(2 ** log2_width):
+        # don't use `if` so this can be used with nmigen values
+        bit = (input & (1 << i)) != 0
+        retval |= bit << (i ^ chunk_sizes)
+    return retval
+
 
 class GRev(Elaboratable):
-    """TODO comments, "this is a half-butterfly aka "generalised reverse"
-    so that it shows up in the auto-generated documentation
-    link to wikipedia etc. etc. https://en.wikipedia.org/wiki/Butterfly_network
+    """ Generalized bit-reverse.
 
+    A generalized bit-reverse is where every output bit is the input bit at
+    index `output_bit_index XOR chunk_sizes` where `chunk_sizes` is the
+    control input.
+
+    This is useful because many bit/byte reverse operations can be created by
+    setting `chunk_sizes` to different values. Some examples for a 64-bit
+    `grev` operation:
+    * `0b111111` -- reverse bits in the 64-bit word
+    * `0b111000` -- reverse bytes in the 64-bit word
+    * `0b011000` -- reverse bytes in each 32-bit word independently
+    * `0b110000` -- reverse order of 16-bit words
+
+    This is implemented by using a series of `log2_width` 2:1 muxes, this is
+    similar, but not identical, to a butterfly network. This is also similar
+    to a common barrel-shifter/rotater design.
+
+    The 2:1 muxes are arranged to calculate successive `grev`-ed values where
+    the intermediate values corresponding `chunk_sizes` is progressively
+    changed from all zeros to the input `chunk_sizes` by adding one bit at a
+    time from the LSB to MSB.
+
+    https://en.wikipedia.org/wiki/Butterfly_network
+    https://en.wikipedia.org/wiki/Barrel_shifter#Implementation
     """
 
     def __init__(self, log2_width):
-        assert isinstance(log2_width, int) # TODO: remove. unnecessary.
         self.log2_width = log2_width
         self.width = 1 << log2_width
-
         self.input = Signal(self.width)
         self.chunk_sizes = Signal(log2_width)
-
         self.output = Signal(self.width)
+        self._steps = [self.input]
+        """ internal signals for unit testing """
+        for i in range(1, log2_width):
+            self._steps.append(Signal(self.width, name=f"step{i}"))
+        self._steps.append(self.output)
 
     def elaborate(self, platform):
         m = Module()
 
-        _steps = [] # cumulative list of steps (for unit test purposes only)
-
-        step_i = self.input # start combinatorial chain with the input
-
-        # TODO: comment that this creates a full combinatorial chain
-        # of RADIX-2 butterfly-network "swappers"
-        for i in range(self.log2_width):
-            step_o = Signal(self.width, name="step_%d" % i)
-            _steps.append(step_o) # accumulate steps (test purposes only)
-            # TODO explain that chunk swap-sizes jump by a power2 each time
+        # see class doc comment for algorithm docs.
+        for i, (step_i, step_o) in enumerate(pairwise(self._steps)):
             chunk_size = 1 << i
-            # TODO comment that this is creating the mux-swapper
             with m.If(self.chunk_sizes[i]):
-                # the mux swap path
                 for j in range(self.width):
-                    # TODO explain what this XOR does
                     m.d.comb += step_o[j].eq(step_i[j ^ chunk_size])
             with m.Else():
-                # the mux straight path
                 m.d.comb += step_o.eq(step_i)
-            step_i = step_o # for next loop, to create the combinatorial chain
-        # TODO comment that the last "step" is the output
-        m.d.comb += self.output.eq(_steps[-1]) # TODO: replace with step_o
-
-        # give access to the steps list for testing purposes
-        self._steps = _steps
 
         return m
