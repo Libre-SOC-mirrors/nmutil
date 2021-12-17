@@ -21,11 +21,11 @@ class TestGrev(FHDLTestCase):
         dut = GRev(log2_width)
         self.assertEqual(width, dut.width)
 
-        def case(input, chunk_sizes):
-            expected = grev(input, chunk_sizes, log2_width)
-            with self.subTest(input=hex(input), chunk_sizes=bin(chunk_sizes),
+        def case(inval, chunk_sizes):
+            expected = grev(inval, chunk_sizes, log2_width)
+            with self.subTest(inval=hex(inval), chunk_sizes=bin(chunk_sizes),
                               expected=hex(expected)):
-                yield dut.input.eq(input)
+                yield dut.input.eq(inval)
                 yield dut.chunk_sizes.eq(chunk_sizes)
                 yield Delay(1e-6)
                 output = yield dut.output
@@ -33,7 +33,7 @@ class TestGrev(FHDLTestCase):
                     self.assertEqual(expected, output)
                 for i, step in enumerate(dut._steps):
                     cur_chunk_sizes = chunk_sizes & (2 ** i - 1)
-                    step_expected = grev(input, cur_chunk_sizes, log2_width)
+                    step_expected = grev(inval, cur_chunk_sizes, log2_width)
                     step = yield step
                     with self.subTest(i=i, step=hex(step),
                                       cur_chunk_sizes=bin(cur_chunk_sizes),
@@ -43,15 +43,15 @@ class TestGrev(FHDLTestCase):
         def process():
             self.assertEqual(len(dut._steps), log2_width + 1)
             for count in range(width + 1):
-                input = (1 << count) - 1
+                inval = (1 << count) - 1
                 for chunk_sizes in range(2 ** log2_width):
-                    yield from case(input, chunk_sizes)
+                    yield from case(inval, chunk_sizes)
             for i in range(100):
-                input = hash_256(f"grev input {i}")
-                input &= 2 ** width - 1
+                inval = hash_256(f"grev input {i}")
+                inval &= 2 ** width - 1
                 chunk_sizes = hash_256(f"grev 2 {i}")
                 chunk_sizes &= 2 ** log2_width - 1
-                yield from case(input, chunk_sizes)
+                yield from case(inval, chunk_sizes)
         with do_sim(self, dut, [dut.input, dut.chunk_sizes,
                                 dut.output]) as sim:
             sim.add_process(process)
