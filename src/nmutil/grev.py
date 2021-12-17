@@ -101,12 +101,13 @@ class GRev(Elaboratable):
 
         step_i = self.input # start with input as the first step
 
-        for i in range(self.log2_width):
+        # create (reversed?) list of steps
+        steps = list(range(self.log2_width))
+        if self.reverse_order: steps.reverse()
+
+        for i in steps:
             # each chunk is a power-2 jump.
-            if self.reverse_order:
-                chunk_size = 1 << (self.log2_width-i-1)
-            else:
-                chunk_size = 1 << i
+            chunk_size = 1 << i
             # prepare a list of XOR-swapped bits of this layer/step
             butterfly = [step_i[j ^ chunk_size] for j in range(self.width)]
             # create muxes here: 1 bit of chunk_sizes decides swap/no-swap
