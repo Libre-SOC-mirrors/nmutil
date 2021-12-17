@@ -1,10 +1,9 @@
 # SPDX-License-Identifier: LGPL-3-or-later
-# See Notices.txt for copyright information
+# Copyright Jacob Lifshay
 
-# TODO add funding and explicit copyright notice (contractually required by
-# NGI POINTER)
+# TODO(lkcl): add NGI POINTER funding notice, idk what we need for that...
 
-# TODO link to bugreport
+"""Generalized bit-reverse. See `GRev` for docs."""
 
 from nmigen.hdl.ast import Signal
 from nmigen.hdl.dsl import Module
@@ -42,6 +41,8 @@ def grev(input, chunk_sizes, log2_width):
 
 class GRev(Elaboratable):
     """ Generalized bit-reverse.
+
+    https://bugs.libre-soc.org/show_bug.cgi?id=755
 
     A generalized bit-reverse is where every output bit is the input bit at
     index `output_bit_index XOR chunk_sizes` where `chunk_sizes` is the
