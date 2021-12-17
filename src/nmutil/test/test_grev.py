@@ -1,5 +1,6 @@
 # SPDX-License-Identifier: LGPL-3-or-later
-# See Notices.txt for copyright information
+# XXX - this is insufficient See Notices.txt for copyright information - XXX
+# XXX TODO: add individual copyright
 
 import unittest
 from nmigen.hdl.ast import AnyConst, Assert
@@ -16,7 +17,6 @@ class TestGrev(FHDLTestCase):
         width = 2 ** log2_width
         dut = GRev(log2_width)
         self.assertEqual(width, dut.width)
-        self.assertEqual(len(dut._steps), log2_width + 1)
 
         def case(input, chunk_sizes):
             expected = grev(input, chunk_sizes, log2_width)
@@ -38,6 +38,7 @@ class TestGrev(FHDLTestCase):
                         self.assertEqual(step, step_expected)
 
         def process():
+            self.assertEqual(len(dut._steps), log2_width + 1)
             for count in range(width + 1):
                 input = (1 << count) - 1
                 for chunk_sizes in range(2 ** log2_width):
@@ -49,7 +50,7 @@ class TestGrev(FHDLTestCase):
                 chunk_sizes &= 2 ** log2_width - 1
                 yield from case(input, chunk_sizes)
         with do_sim(self, dut, [dut.input, dut.chunk_sizes,
-                                *dut._steps, dut.output]) as sim:
+                                dut.output]) as sim:
             sim.add_process(process)
             sim.run()
 
@@ -60,12 +61,7 @@ class TestGrev(FHDLTestCase):
         m.submodules.dut = dut
         m.d.comb += dut.input.eq(AnyConst(2 ** log2_width))
         m.d.comb += dut.chunk_sizes.eq(AnyConst(log2_width))
-        m.d.comb += Assert(dut.output == grev(dut.input,
-                                              dut.chunk_sizes, log2_width))
-        for i, step in enumerate(dut._steps):
-            cur_chunk_sizes = dut.chunk_sizes & (2 ** i - 1)
-            step_expected = grev(dut.input, cur_chunk_sizes, log2_width)
-            m.d.comb += Assert(step == step_expected)
+        # actual formal correctness proof is inside the module itself, now
         self.assertFormal(m)
 
 

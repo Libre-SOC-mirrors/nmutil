@@ -14,6 +14,7 @@ module docstring here, to describe the Grev concept.
 """
 
 from nmigen.hdl.ast import Signal, Mux, Cat
+from nmigen.hdl.ast import Assert
 from nmigen.hdl.dsl import Module
 from nmigen.hdl.ir import Elaboratable
 from nmigen.cli import rtlil
@@ -118,6 +119,18 @@ class GRev(Elaboratable):
 
         # last layer is also the output
         comb += self.output.eq(step_o)
+
+        if platform != 'formal':
+            return m
+
+        # formal test comparing directly against the (simpler) version
+        m.d.comb += Assert(self.output == grev(self.input,
+                                              self.chunk_sizes,
+                                              self.log2_width))
+        for i, step in enumerate(self._steps):
+            cur_chunk_sizes = self.chunk_sizes & (2 ** i - 1)
+            step_expected = grev(self.input, cur_chunk_sizes, self.log2_width)
+            m.d.comb += Assert(step == step_expected)
 
         return m
 
