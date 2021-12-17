@@ -1,29 +1,26 @@
 # SPDX-License-Identifier: LGPL-3-or-later
-# Copyright Jacob Lifshay
+# Copyright Jacob Lifshay ADD EMAIL ADDRESS ADD YEAR - FOLLOW STANDARD PRACTICE
+# Copyright (C) 2021 Luke Kenneth Casson Leighton <lkcl@lkcl.net>
 
 # TODO(lkcl): add NGI POINTER funding notice, idk what we need for that...
+# realised it is actually NLnet (not NGI) so just "funded by NLnet Assure
+# and put URL)
 
-"""Generalized bit-reverse. See `GRev` for docs."""
 
-from nmigen.hdl.ast import Signal
+"""Generalized bit-reverse. See `GRev` for docs. - no: move the
+module docstring here, to describe the Grev concept.
+* module docs tell you "about the concept and anything generally useful to know"
+* class docs are for "how to actually use the class".
+"""
+
+from nmigen.hdl.ast import Signal, Mux, Cat
 from nmigen.hdl.dsl import Module
 from nmigen.hdl.ir import Elaboratable
-from itertools import tee
-
-
-def pairwise(iterable):
-    """
-    itertools.pairwise, added in Python 3.10, copied here cuz we support 3.7+
-    https://docs.python.org/3.10/library/itertools.html#itertools.pairwise
-    """
-    # code copied from Python's docs
-    a, b = tee(iterable)
-    next(b, None)
-    return zip(a, b)
+from nmigen.cli import rtlil
 
 
 def grev(input, chunk_sizes, log2_width):
-    """
+    """XXX start comments here with no space
     Python reference implementation of generalized bit-reverse.
     See `GRev` for documentation.
     """
@@ -40,57 +37,97 @@ def grev(input, chunk_sizes, log2_width):
 
 
 class GRev(Elaboratable):
-    """ Generalized bit-reverse.
+    """ <--no space here>Generalized bit-reverse.
 
     https://bugs.libre-soc.org/show_bug.cgi?id=755
 
-    A generalized bit-reverse is where every output bit is the input bit at
-    index `output_bit_index XOR chunk_sizes` where `chunk_sizes` is the
-    control input.
+    XXX this is documentation about Grev (the concept) which should be in
+    the docstring.  the class string is reserved for describing how to
+    *use* the class (describe its inputs and outputs)
+
+    A generalized bit-reverse - also known as a butterfly network - is where
+    every output bit is the input bit at index `output_bit_index XOR
+    chunk_sizes` where `chunk_sizes` is the control input.
 
     This is useful because many bit/byte reverse operations can be created by
     setting `chunk_sizes` to different values. Some examples for a 64-bit
     `grev` operation:
-    * `0b111111` -- reverse bits in the 64-bit word
+    * `0b111111` -- reverse all bits in the 64-bit word
     * `0b111000` -- reverse bytes in the 64-bit word
     * `0b011000` -- reverse bytes in each 32-bit word independently
     * `0b110000` -- reverse order of 16-bit words
 
-    This is implemented by using a series of `log2_width` 2:1 muxes, this is
-    similar, but not identical, to a butterfly network. This is also similar
-    to a common barrel-shifter/rotater design.
+    This is implemented by using a series of `log2_width` 2:1 muxes, exactly
+    as in a butterfly network: https://en.wikipedia.org/wiki/Butterfly_network
 
     The 2:1 muxes are arranged to calculate successive `grev`-ed values where
     each intermediate value's corresponding `chunk_sizes` is progressively
     changed from all zeros to the input `chunk_sizes` by adding one bit at a
-    time from the LSB to MSB.
+    time from the LSB to MSB.  (XXX i don't understand this at all!)
 
-    https://en.wikipedia.org/wiki/Butterfly_network
-    https://en.wikipedia.org/wiki/Barrel_shifter#Implementation
+    :reverse_order: if True the butterfly steps are performed
+                    at offsets of 2^N ... 8 4 2.
+                    if False, the order is 2 4 8 ... 2^N
     """
 
-    def __init__(self, log2_width):
+    def __init__(self, log2_width, reverse_order=False):
+        self.reverse_order = reverse_order    # reverses the order of steps
         self.log2_width = log2_width
         self.width = 1 << log2_width
-        self.input = Signal(self.width)
-        self.chunk_sizes = Signal(log2_width)
-        self.output = Signal(self.width)
-        self._steps = [self.input]
-        """ internal signals, exposed for unit testing """
-        for i in range(1, log2_width):
-            self._steps.append(Signal(self.width, name=f"step{i}"))
-        self._steps.append(self.output)
+        self.input = Signal(self.width)       # XXX mark this as an input
+        self.chunk_sizes = Signal(log2_width) # XXX is this an input or output?
+        self.output = Signal(self.width)      # XXX mark this as the output
 
     def elaborate(self, platform):
         m = Module()
+        comb = m.d.comb
 
-        # see class doc comment for algorithm docs.
-        for i, (step_i, step_o) in enumerate(pairwise(self._steps)):
-            chunk_size = 1 << i
-            with m.If(self.chunk_sizes[i]):
-                for j in range(self.width):
-                    m.d.comb += step_o[j].eq(step_i[j ^ chunk_size])
-            with m.Else():
-                m.d.comb += step_o.eq(step_i)
+        # accumulate list of internal signals, exposed only for unit testing.
+        # contains the input, intermediary steps, and the output.
+        self._steps = [self.input]
+
+        # TODO: no. "see class doc comment for algorithm docs." <-- document
+        #           *in* the code, not "see another location elsewhere"
+        #           (unless it is a repeated text/concept of course, like
+        #            with BitwiseLut, and that's because the API is identical)
+        #           "see elsewhere" entirely defeats the object of the exercise.
+        #           jumping back and forth (page-up, page-down)
+        #           between the text and the code splits attention.
+        #           the purpose of comments is to be able to understand
+        #           (in plain english) the code *at* the point of seeing it
+        #           it should contain "the thoughts going through your head"
+        #
+        #           demonstrated below (with a rewrite)
+
+        step_i = self.input # start with input as the first step
+
+        for i in range(self.log2_width):
+            # each chunk is a power-2 jump.
+            if self.reverse_order:
+                chunk_size = 1 << (self.log2_width-i-1)
+            else:
+                chunk_size = 1 << i
+            # prepare a list of XOR-swapped bits of this layer/step
+            butterfly = [step_i[j ^ chunk_size] for j in range(self.width)]
+            # create muxes here: 1 bit of chunk_sizes decides swap/no-swap
+            step_o = Signal(self.width, name="step%d" % chunk_size)
+            comb += step_o.eq(Mux(self.chunk_sizes[i], Cat(*butterfly), step_i))
+            # output becomes input to next layer
+            step_i = step_o
+            self._steps.append(step_o) # record steps for test purposes (only)
+
+        # last layer is also the output
+        comb += self.output.eq(step_o)
 
         return m
+
+    def ports(self):
+        return [self.input, self.chunk_sizes, self.output]
+
+
+# useful to see what is going on: use yosys "read_ilang test_grev.il; show top"
+if __name__ == '__main__':
+    dut = GRev(3)
+    vl = rtlil.convert(dut, ports=dut.ports())
+    with open("test_grev.il", "w") as f:
+        f.write(vl)
