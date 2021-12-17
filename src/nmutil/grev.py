@@ -75,7 +75,7 @@ class GRev(Elaboratable):
         self.chunk_sizes = Signal(log2_width)
         self.output = Signal(self.width)
         self._steps = [self.input]
-        """ internal signals for unit testing """
+        """ internal signals, exposed for unit testing """
         for i in range(1, log2_width):
             self._steps.append(Signal(self.width, name=f"step{i}"))
         self._steps.append(self.output)
