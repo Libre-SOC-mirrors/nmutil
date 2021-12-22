@@ -53,14 +53,14 @@ class BitwiseLut(Elaboratable):
 
         def inp(i):
             return Signal(width, name=f"input{i}")
-        self.inputs = tuple(inp(i) for i in range(input_count)) # inputs
+        self.inputs = tuple(inp(i) for i in range(input_count))  # inputs
         self.lut = Signal(2 ** input_count)                     # lookup input
         self.output = Signal(width)                             # output
 
     def elaborate(self, platform):
         m = Module()
         comb = m.d.comb
-        lut_array = Array(self.lut) # create dynamic-indexable LUT array
+        lut_array = Array(self.lut)  # create dynamic-indexable LUT array
         out = []
 
         for bit in range(self.width):

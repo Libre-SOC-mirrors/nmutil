@@ -75,7 +75,8 @@ class GRev(Elaboratable):
         self.log2_width = log2_width
         self.width = 1 << log2_width
         self.input = Signal(self.width)       # XXX mark this as an input
-        self.chunk_sizes = Signal(log2_width) # XXX is this an input or output?
+        # XXX is this an input or output?
+        self.chunk_sizes = Signal(log2_width)
         self.output = Signal(self.width)      # XXX mark this as the output
 
     def elaborate(self, platform):
@@ -99,11 +100,12 @@ class GRev(Elaboratable):
         #
         #           demonstrated below (with a rewrite)
 
-        step_i = self.input # start with input as the first step
+        step_i = self.input  # start with input as the first step
 
         # create (reversed?) list of steps
         steps = list(range(self.log2_width))
-        if self.reverse_order: steps.reverse()
+        if self.reverse_order:
+            steps.reverse()
 
         for i in steps:
             # each chunk is a power-2 jump.
@@ -112,10 +114,11 @@ class GRev(Elaboratable):
             butterfly = [step_i[j ^ chunk_size] for j in range(self.width)]
             # create muxes here: 1 bit of chunk_sizes decides swap/no-swap
             step_o = Signal(self.width, name="step%d" % chunk_size)
-            comb += step_o.eq(Mux(self.chunk_sizes[i], Cat(*butterfly), step_i))
+            comb += step_o.eq(Mux(self.chunk_sizes[i],
+                                  Cat(*butterfly), step_i))
             # output becomes input to next layer
             step_i = step_o
-            self._steps.append(step_o) # record steps for test purposes (only)
+            self._steps.append(step_o)  # record steps for test purposes (only)
 
         # last layer is also the output
         comb += self.output.eq(step_o)
@@ -125,8 +128,8 @@ class GRev(Elaboratable):
 
         # formal test comparing directly against the (simpler) version
         m.d.comb += Assert(self.output == grev(self.input,
-                                              self.chunk_sizes,
-                                              self.log2_width))
+                                               self.chunk_sizes,
+                                               self.log2_width))
         for i, step in enumerate(self._steps):
             cur_chunk_sizes = self.chunk_sizes & (2 ** i - 1)
             step_expected = grev(self.input, cur_chunk_sizes, self.log2_width)
