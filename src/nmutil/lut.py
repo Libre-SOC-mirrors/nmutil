@@ -144,9 +144,5 @@ class TreeBitwiseLut(Elaboratable):
         return [self.input, self.chunk_sizes, self.output]
 
 
-# useful to see what is going on: use yosys "read_ilang test_lut.il; show top"
-if __name__ == '__main__':
-    dut = BitwiseLut(3, 8)
-    vl = rtlil.convert(dut, ports=dut.ports())
-    with open("test_lut.il", "w") as f:
-        f.write(vl)
+# useful to see what is going on:
+# yosys <<<"read_ilang sim_test_out/__main__.TestBitwiseLut.test_tree/0.il; proc;;; show top"
