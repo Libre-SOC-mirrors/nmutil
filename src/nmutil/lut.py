@@ -183,4 +183,5 @@ class TreeBitwiseLut(Elaboratable):
 
 
 # useful to see what is going on:
+# python3 src/nmutil/test/test_lut.py
 # yosys <<<"read_ilang sim_test_out/__main__.TestBitwiseLut.test_tree/0.il; proc;;; show top"
