@@ -65,25 +65,6 @@ class TestBitwiseLut(FHDLTestCase):
         dut = cls(3, 16)
         mask = 2 ** dut.width - 1
         lut_mask = 2 ** dut.lut.width - 1
-        if cls is TreeBitwiseLut:
-            mux_inputs = {k: s.name for k, s in dut._mux_inputs.items()}
-            self.assertEqual(mux_inputs, {
-                (): 'mux_input_0bxxx',
-                (False,): 'mux_input_0bxx0',
-                (False, False): 'mux_input_0bx00',
-                (False, False, False): 'mux_input_0b000',
-                (False, False, True): 'mux_input_0b100',
-                (False, True): 'mux_input_0bx10',
-                (False, True, False): 'mux_input_0b010',
-                (False, True, True): 'mux_input_0b110',
-                (True,): 'mux_input_0bxx1',
-                (True, False): 'mux_input_0bx01',
-                (True, False, False): 'mux_input_0b001',
-                (True, False, True): 'mux_input_0b101',
-                (True, True): 'mux_input_0bx11',
-                (True, True, False): 'mux_input_0b011',
-                (True, True, True): 'mux_input_0b111'
-            })
 
         def case(in0, in1, in2, lut):
             expected = 0
@@ -109,6 +90,10 @@ class TestBitwiseLut(FHDLTestCase):
                     self.assertEqual(expected, output)
 
         def process():
+            for shift in range(dut.lut.width):
+                with self.subTest(shift=shift):
+                    yield from case(in0=0xAAAA, in1=0xCCCC, in2=0xF0F0,
+                                    lut=1 << shift)
             for case_index in range(100):
                 with self.subTest(case_index=case_index):
                     in0 = hash_256(f"{case_index} in0") & mask
