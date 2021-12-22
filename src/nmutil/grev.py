@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: LGPL-3-or-later
-# Copyright Jacob Lifshay ADD EMAIL ADDRESS ADD YEAR - FOLLOW STANDARD PRACTICE
+# Copyright 2021 Jacob Lifshay programmerjake@gmail.com
 # Copyright (C) 2021 Luke Kenneth Casson Leighton <lkcl@lkcl.net>
 
 # Funded by NLnet Assure Programme 2021-02-052, https://nlnet.nl/assure part

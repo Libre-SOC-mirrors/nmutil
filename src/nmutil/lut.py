@@ -1,7 +1,9 @@
 # SPDX-License-Identifier: LGPL-3-or-later
-# TODO: Copyright notice (standard style, plenty of examples)
+# Copyright 2021 Jacob Lifshay
 # Copyright (C) 2021 Luke Kenneth Casson Leighton <lkcl@lkcl.net>
-# TODO: credits to NLnet for funding
+
+# Funded by NLnet Assure Programme 2021-02-052, https://nlnet.nl/assure part
+# of Horizon 2020 EU Programme 957073.
 
 """Bitwise logic operators implemented using a look-up table, like LUTs in
 FPGAs. Inspired by x86's `vpternlog[dq]` instructions.

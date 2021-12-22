@@ -1,6 +1,5 @@
 # SPDX-License-Identifier: LGPL-3-or-later
-# XXX - this is insufficient See Notices.txt for copyright information - XXX
-# XXX TODO: add individual copyright
+# Copyright 2021 Jacob Lifshay
 
 # Funded by NLnet Assure Programme 2021-02-052, https://nlnet.nl/assure part
 # of Horizon 2020 EU Programme 957073.
