@@ -17,7 +17,7 @@ from nmigen.cli import rtlil
 
 
 class BitwiseMux(Elaboratable):
-    """ <- XXX no space here>Mux, but treating input/output Signals as bit vectors, rather than
+    """Mux, but treating input/output Signals as bit vectors, rather than
     integers. This means each bit in the output is independently multiplexed
     based on the corresponding bit in each of the inputs.
     """
@@ -35,10 +35,10 @@ class BitwiseMux(Elaboratable):
 
 
 class BitwiseLut(Elaboratable):
-    """ <- XXX no space here>Bitwise logic operators implemented using a look-up table, like LUTs in
-        FPGAs. Inspired by x86's `vpternlog[dq]` instructions.
+    """Bitwise logic operators implemented using a look-up table, like LUTs in
+    FPGAs. Inspired by x86's `vpternlog[dq]` instructions.
 
-        Each output bit `i` is set to `lut[Cat(inp[i] for inp in self.inputs)]`
+    Each output bit `i` is set to `lut[Cat(inp[i] for inp in self.inputs)]`
     """
 
     def __init__(self, input_count, width):
@@ -81,10 +81,10 @@ class BitwiseLut(Elaboratable):
 
 
 class TreeBitwiseLut(Elaboratable):
-    """ <- XXX no space here>Tree-based version of BitwiseLut. See BitwiseLut for API documentation.
-        (good enough reason to say "see bitwiselut", but mention that
-        the API is identical and explain why the second implementation
-        exists, despite it being identical)
+    """Tree-based version of BitwiseLut. See BitwiseLut for API documentation.
+    (good enough reason to say "see bitwiselut", but mention that
+    the API is identical and explain why the second implementation
+    exists, despite it being identical)
     """
 
     def __init__(self, input_count, width):

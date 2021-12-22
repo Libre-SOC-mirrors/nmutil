@@ -37,7 +37,7 @@ def grev(inval, chunk_sizes, log2_width):
 
 
 class GRev(Elaboratable):
-    """ <--no space here>Generalized bit-reverse.
+    """Generalized bit-reverse.
 
     https://bugs.libre-soc.org/show_bug.cgi?id=755
 
