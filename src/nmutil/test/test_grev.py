@@ -14,11 +14,11 @@ from nmutil.sim_util import do_sim, hash_256
 
 
 class TestGrev(FHDLTestCase):
-    def test(self):
-        log2_width = 6
+    def tst(self, msb_first, log2_width=6):
         width = 2 ** log2_width
-        dut = GRev(log2_width)
+        dut = GRev(log2_width, msb_first)
         self.assertEqual(width, dut.width)
+        self.assertEqual(len(dut._intermediates), log2_width + 1)
 
         def case(inval, chunk_sizes):
             expected = grev(inval, chunk_sizes, log2_width)
@@ -30,17 +30,14 @@ class TestGrev(FHDLTestCase):
                 output = yield dut.output
                 with self.subTest(output=hex(output)):
                     self.assertEqual(expected, output)
-                for i, step in enumerate(dut._steps):
-                    cur_chunk_sizes = chunk_sizes & (2 ** i - 1)
-                    step_expected = grev(inval, cur_chunk_sizes, log2_width)
-                    step = yield step
-                    with self.subTest(i=i, step=hex(step),
-                                      cur_chunk_sizes=bin(cur_chunk_sizes),
-                                      step_expected=hex(step_expected)):
-                        self.assertEqual(step, step_expected)
+                for sig, expected in dut._sigs_and_expected(inval,
+                                                            chunk_sizes):
+                    value = yield sig
+                    with self.subTest(sig=sig.name, value=hex(value),
+                                      expected=hex(expected)):
+                        self.assertEqual(value, expected)
 
         def process():
-            self.assertEqual(len(dut._steps), log2_width + 1)
             for count in range(width + 1):
                 inval = (1 << count) - 1
                 for chunk_sizes in range(2 ** log2_width):
@@ -56,15 +53,33 @@ class TestGrev(FHDLTestCase):
             sim.add_process(process)
             sim.run()
 
-    def test_formal(self):
+    def test(self):
+        self.tst(msb_first=False)
+
+    def test_msb_first(self):
+        self.tst(msb_first=True)
+
+    def test_small(self):
+        self.tst(msb_first=False, log2_width=3)
+
+    def test_small_msb_first(self):
+        self.tst(msb_first=True, log2_width=3)
+
+    def tst_formal(self, msb_first):
         log2_width = 4
-        dut = GRev(log2_width)
+        dut = GRev(log2_width, msb_first)
         m = Module()
         m.submodules.dut = dut
         m.d.comb += dut.input.eq(AnyConst(2 ** log2_width))
         m.d.comb += dut.chunk_sizes.eq(AnyConst(log2_width))
         # actual formal correctness proof is inside the module itself, now
         self.assertFormal(m)
+
+    def test_formal(self):
+        self.tst_formal(msb_first=False)
+
+    def test_formal_msb_first(self):
+        self.tst_formal(msb_first=True)
 
 
 if __name__ == "__main__":
