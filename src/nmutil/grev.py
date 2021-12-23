@@ -20,8 +20,7 @@ from nmigen.cli import rtlil
 
 
 def grev(inval, chunk_sizes, log2_width):
-    """XXX start comments here with no space
-    Python reference implementation of generalized bit-reverse.
+    """Python reference implementation of generalized bit-reverse.
     See `GRev` for documentation.
     """
     # mask inputs into range
@@ -74,10 +73,10 @@ class GRev(Elaboratable):
         self.reverse_order = reverse_order    # reverses the order of steps
         self.log2_width = log2_width
         self.width = 1 << log2_width
-        self.input = Signal(self.width)       # XXX mark this as an input
+        self.input = Signal(self.width)
         # XXX is this an input or output?
         self.chunk_sizes = Signal(log2_width)
-        self.output = Signal(self.width)      # XXX mark this as the output
+        self.output = Signal(self.width)
 
     def elaborate(self, platform):
         m = Module()
