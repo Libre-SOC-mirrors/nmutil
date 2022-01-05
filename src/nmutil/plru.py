@@ -23,8 +23,8 @@ class PLRU(Elaboratable):
 
     def __init__(self, BITS):
         self.BITS = BITS
-        self.acc_en = Signal(BITS)
-        self.acc_i = Signal()
+        self.acc_i = Signal(BITS)
+        self.acc_en = Signal()
         self.lru_o = Signal(BITS)
 
     def elaborate(self, platform=None):
@@ -51,7 +51,7 @@ class PLRU(Elaboratable):
 
         LOG_TLB = log2_int(self.BITS, False)
         hit = Signal(self.BITS, reset_less=True)
-        m.d.comb += hit.eq(Repl(self.acc_i, self.BITS) & self.acc_en)
+        m.d.comb += hit.eq(Repl(self.acc_en, self.BITS) & self.acc_i)
 
         for i in range(self.BITS):
             # we got a hit so update the pointer as it was least recently used
@@ -155,21 +155,7 @@ class PLRUs(Elaboratable):
 
 
 if __name__ == '__main__':
-    dut = PLRU(8)
-    vl = rtlil.convert(dut, ports=dut.ports())
-    with open("test_plru.il", "w") as f:
-        f.write(vl)
-
-
-    dut = PLRUs(4, 2)
-    vl = rtlil.convert(dut, ports=dut.ports())
-    with open("test_plrus.il", "w") as f:
-        f.write(vl)
-
-
-
-if __name__ == '__main__':
-    dut = PLRU(2)
+    dut = PLRU(3)
     vl = rtlil.convert(dut, ports=dut.ports())
     with open("test_plru.il", "w") as f:
         f.write(vl)
