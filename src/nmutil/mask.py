@@ -17,14 +17,14 @@ def masked(m_out, m_in, mask):
 class Mask(Elaboratable):
     def __init__(self, sz):
         self.sz = sz
-        self.shift = Signal(log2_int(sz, False)+1)
+        self.shift = Signal(sz.bit_length()+1)
         self.mask = Signal(sz)
 
     def elaborate(self, platform):
         m = Module()
 
         for i in range(self.sz):
-            with m.If(self.shift > i):
+            with m.If(i < self.shift):
                 m.d.comb += self.mask[i].eq(1)
 
         return m
