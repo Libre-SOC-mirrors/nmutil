@@ -15,7 +15,6 @@ https://www.felixcloutier.com/x86/vpternlogd:vpternlogq
 from nmigen.hdl.ast import Array, Cat, Repl, Signal
 from nmigen.hdl.dsl import Module
 from nmigen.hdl.ir import Elaboratable
-from nmigen.cli import rtlil
 from dataclasses import dataclass
 
 
