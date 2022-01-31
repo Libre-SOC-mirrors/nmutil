@@ -74,11 +74,13 @@ class SRLatch(Elaboratable):
     def elaborate(self, platform):
         m = Module()
 
-        m.d.sync += self.q_int.eq((self.q_int & ~self.r) | self.s)
+        next_o = Signal(self.llen, reset_less=True)
+        m.d.comb += next_o.eq((self.q_int & ~self.r) | self.s)
+        m.d.sync += self.q_int.eq(next_o)
         if self.sync:
             m.d.comb += self.q.eq(self.q_int)
         else:
-            m.d.comb += self.q.eq((self.q_int & ~self.r) | self.s)
+            m.d.comb += self.q.eq(next_o)
         m.d.comb += self.qn.eq(~self.q)
         m.d.comb += self.qlq.eq(self.q | self.q_int) # useful output
 
