@@ -15,6 +15,7 @@ https://www.felixcloutier.com/x86/vpternlogd:vpternlogq
 from nmigen.hdl.ast import Array, Cat, Repl, Signal
 from nmigen.hdl.dsl import Module
 from nmigen.hdl.ir import Elaboratable
+from nmigen.cli import rtlil
 from dataclasses import dataclass
 
 
@@ -184,3 +185,9 @@ class TreeBitwiseLut(Elaboratable):
 # useful to see what is going on:
 # python3 src/nmutil/test/test_lut.py
 # yosys <<<"read_ilang sim_test_out/__main__.TestBitwiseLut.test_tree/0.il; proc;;; show top"
+
+if __name__ == '__main__':
+    dut = BitwiseLut(2, 64)
+    vl = rtlil.convert(dut, ports=dut.ports())
+    with open("test_lut2.il", "w") as f:
+        f.write(vl)
