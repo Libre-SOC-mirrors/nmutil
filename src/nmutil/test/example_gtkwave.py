@@ -16,7 +16,7 @@ class Shifter(Elaboratable):
 
         * ``p_i_data``: value to be shifted
 
-        * ``p_shift_i``: shift amount
+        * ``p_i_shift``: shift amount
 
         * ``op__sdir``: shift direction (0 = left, 1 = right)
 
@@ -32,7 +32,7 @@ class Shifter(Elaboratable):
         self.width = width
         """data width"""
         self.p_i_data = Signal(width)
-        self.p_shift_i = Signal(width)
+        self.p_i_shift = Signal(width)
         self.op__sdir = Signal()
         self.p_i_valid = Signal()
         self.p_o_ready = Signal()
@@ -91,7 +91,7 @@ class Shifter(Elaboratable):
                     self.p_o_ready.eq(1),
                     # keep loading the shift register and shift count
                     load.eq(1),
-                    next_count.eq(self.p_shift_i),
+                    next_count.eq(self.p_i_shift),
                 ]
                 # capture the direction bit as well
                 m.d.sync += direction.eq(self.op__sdir)
@@ -124,7 +124,7 @@ class Shifter(Elaboratable):
     def __iter__(self):
         yield self.op__sdir
         yield self.p_i_data
-        yield self.p_shift_i
+        yield self.p_i_shift
         yield self.p_i_valid
         yield self.p_o_ready
         yield self.n_i_ready
@@ -158,7 +158,7 @@ def write_gtkw_direct():
             # demonstrates using decimal base (default is hex)
             gtkw.trace(dut + "p_i_data[7:0]", color=style_input,
                        datafmt='dec')
-            gtkw.trace(dut + "p_shift_i[7:0]", color=style_input,
+            gtkw.trace(dut + "p_i_shift[7:0]", color=style_input,
                        datafmt='dec')
             gtkw.trace(dut + "p_i_valid", color=style_input)
             gtkw.trace(dut + "p_o_ready", color=style_output)
@@ -226,7 +226,7 @@ def test_shifter():
             # attach a class style for each signal
             ('op__sdir', 'in'),
             ('p_i_data[7:0]', 'in'),
-            ('p_shift_i[7:0]', 'in'),
+            ('p_i_shift[7:0]', 'in'),
             ('p_i_valid', 'in'),
             ('p_o_ready', 'out'),
         ]),
@@ -279,7 +279,7 @@ def test_shifter():
     def send(data, shift, direction):
         # present input data and assert i_valid
         yield dut.p_i_data.eq(data)
-        yield dut.p_shift_i.eq(shift)
+        yield dut.p_i_shift.eq(shift)
         yield dut.op__sdir.eq(direction)
         yield dut.p_i_valid.eq(1)
         yield
@@ -298,7 +298,7 @@ def test_shifter():
         # clear input data and negate p.i_valid
         yield dut.p_i_valid.eq(0)
         yield dut.p_i_data.eq(0)
-        yield dut.p_shift_i.eq(0)
+        yield dut.p_i_shift.eq(0)
         yield dut.op__sdir.eq(0)
 
     def receive(expected):
