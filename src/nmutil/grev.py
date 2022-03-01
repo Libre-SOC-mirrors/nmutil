@@ -83,6 +83,7 @@ from nmigen.hdl.ast import Signal, Mux, Cat
 from nmigen.hdl.ast import Assert
 from nmigen.hdl.dsl import Module
 from nmigen.hdl.ir import Elaboratable
+from nmigen.back import rtlil
 import string
 
 
@@ -261,3 +262,9 @@ class GRev(Elaboratable):
 # useful to see what is going on:
 # python3 src/nmutil/test/test_grev.py
 # yosys <<<"read_ilang sim_test_out/__main__.TestGrev.test_small/0.il; proc; clean -purge; show top"
+
+if __name__ == '__main__':
+    dut = GRev(3)
+    vl = rtlil.convert(dut, ports=dut.ports())
+    with open("grev3.il", "w") as f:
+        f.write(vl)
