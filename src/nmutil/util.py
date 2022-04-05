@@ -8,6 +8,7 @@
 from collections.abc import Iterable
 from nmigen import Mux, Signal, Cat
 
+
 # XXX this already exists in nmigen._utils
 # see https://bugs.libre-soc.org/show_bug.cgi?id=297
 def flatten(v):
@@ -17,14 +18,23 @@ def flatten(v):
     else:
         yield v
 
+
 # tree reduction function.  operates recursively.
-def treereduce(tree, op, fn):
-    """treereduce: apply a map-reduce to a list.
+def treereduce(tree, op, fn=None):
+    """treereduce: apply a map-reduce to a list, reducing to a single item
+
+    this is *not* the same as "x = Signal(64) reduce(x, operator.add)",
+    which is a bit-wise reduction down to a single bit
+
+    it is "l = [Signal(w), ..., Signal(w)] reduce(l, operator.add)"
+    i.e. l[0] + l[1] ...
+
     examples: OR-reduction of one member of a list of Records down to a
-              single data point:
+              single value:
               treereduce(tree, operator.or_, lambda x: getattr(x, "o_data"))
     """
-    #print ("treereduce", tree)
+    if fn is None:
+        fn = lambda x: x
     if not isinstance(tree, list):
         return tree
     if len(tree) == 1:
