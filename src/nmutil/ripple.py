@@ -17,14 +17,22 @@ from nmigen import Signal, Module, Elaboratable, Mux, Cat
 from nmigen.cli import main
 
 
-class RippleLSB(Elaboratable):
-    """RippleLSB
+class Ripple(Elaboratable):
+    """Ripple
 
-    based on a partition mask, the LSB is "rippled" (duplicated)
-    up to the beginning of the next partition.
+    starting from certain bits (marked by "gates") that bit is "rippled"
+    up to the point where a gate bit is no longer set.  ripple direction can
+    be set by start_lsb.
+
+    if start_lsb=True:
+        gates      =>  1 1 0 0 0 1 1
+        (ripples)     <<<< xxx <<<<<
+        results_in => 0 0 1 0 1 0 0 1
+        output     => 1 1 1 0 0 1 1 1
     """
-    def __init__(self, width):
+    def __init__(self, width, start_lsb=True):
         self.width = width
+        self.start_lsb = start_lsb
         self.results_in = Signal(width, reset_less=True)
         self.gates = Signal(width-1, reset_less=True)
         self.output = Signal(width, reset_less=True)
@@ -34,14 +42,37 @@ class RippleLSB(Elaboratable):
         comb = m.d.comb
         width = self.width
 
-        current_result = self.results_in[0]
-        comb += self.output[0].eq(current_result)
+        results_in = list(self.results_in)
+        if not self.start_lsb: results_in = reversed(results_in)
+        l = [results_in[0]]
 
         for i in range(width-1):
-            cur = Mux(self.gates[i], self.results_in[i+1], self.output[i])
-            comb += self.output[i+1].eq(cur)
+            l.append(Mux(self.gates[i], results_in[i+1], self.output[i]))
+
+        if not self.start_lsb: l = reversed(l)
+        comb += self.output.eq(Cat(*l))
 
         return m
+
+
+class RippleLSB(Ripple):
+    """RippleLSB
+
+    based on a partition mask, the LSB is "rippled" (duplicated)
+    up to the beginning of the next partition.
+    """
+    def __init__(self, width):
+        Ripple.__init__(self, width, start_lsb=True)
+
+
+class RippleMSB(Ripple):
+    """RippleMSB
+
+    based on a partition mask, the MSB is "rippled" (duplicated)
+    down to the beginning of the next partition.
+    """
+    def __init__(self, width):
+        Ripple.__init__(self, width, start_lsb=True)
 
 
 class MoveMSBDown(Elaboratable):
