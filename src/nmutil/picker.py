@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: LGPL-3-or-later
 """ Priority Picker: optimised back-to-back PriorityEncoder and Decoder
     and MultiPriorityPicker: cascading mutually-exclusive pickers
 

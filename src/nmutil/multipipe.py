@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: LGPL-3-or-later
 """ Combinatorial Multi-input and Multi-output multiplexer blocks
     conforming to Pipeline API
 

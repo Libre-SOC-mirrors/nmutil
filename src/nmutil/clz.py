@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: LGPL-3-or-later
 from nmigen import Module, Signal, Elaboratable, Cat, Repl
 import math
 """ This module is much more efficient than PriorityEncoder

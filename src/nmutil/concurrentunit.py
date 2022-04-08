@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: LGPL-3-or-later
 """ concurrent unit from mitch alsup augmentations to 6600 scoreboard
 
     This work is funded through NLnet under Grant 2019-02-012

@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: LGPL-3-or-later
 """
     This work is funded through NLnet under Grant 2019-02-012
 

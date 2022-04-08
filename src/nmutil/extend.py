@@ -1,5 +1,5 @@
+# SPDX-License-Identifier: LGPL-2-or-later
 # Copyright (C) Luke Kenneth Casson Leighton 2020,2021 <lkcl@lkcl.net>
-# License: LGPLv2+
 """
 Provides sign/unsigned extension/truncation utility functions.
 
