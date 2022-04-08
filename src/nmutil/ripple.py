@@ -30,6 +30,7 @@ class Ripple(Elaboratable):
         results_in => 0 0 1 0 1 0 0 1
         output     => 1 1 1 0 0 1 1 1
     """
+
     def __init__(self, width, start_lsb=True):
         self.width = width
         self.start_lsb = start_lsb
@@ -43,13 +44,15 @@ class Ripple(Elaboratable):
         width = self.width
 
         results_in = list(self.results_in)
-        if not self.start_lsb: results_in = reversed(results_in)
+        if not self.start_lsb:
+            results_in = reversed(results_in)
         l = [results_in[0]]
 
         for i in range(width-1):
             l.append(Mux(self.gates[i], results_in[i+1], self.output[i]))
 
-        if not self.start_lsb: l = reversed(l)
+        if not self.start_lsb:
+            l = reversed(l)
         comb += self.output.eq(Cat(*l))
 
         return m
@@ -61,6 +64,7 @@ class RippleLSB(Ripple):
     based on a partition mask, the LSB is "rippled" (duplicated)
     up to the beginning of the next partition.
     """
+
     def __init__(self, width):
         Ripple.__init__(self, width, start_lsb=True)
 
@@ -71,6 +75,7 @@ class RippleMSB(Ripple):
     based on a partition mask, the MSB is "rippled" (duplicated)
     down to the beginning of the next partition.
     """
+
     def __init__(self, width):
         Ripple.__init__(self, width, start_lsb=True)
 
@@ -84,6 +89,7 @@ class MoveMSBDown(Elaboratable):
     into its own useful module), then ANDs the (new) LSB with the
     partition mask to isolate it.
     """
+
     def __init__(self, width):
         self.width = width
         self.results_in = Signal(width, reset_less=True)
@@ -97,14 +103,14 @@ class MoveMSBDown(Elaboratable):
         intermed = Signal(width, reset_less=True)
 
         # first propagate MSB down until the nearest partition gate
-        comb += intermed[-1].eq(self.results_in[-1]) # start at MSB
+        comb += intermed[-1].eq(self.results_in[-1])  # start at MSB
         for i in range(width-2, -1, -1):
             cur = Mux(self.gates[i], self.results_in[i], intermed[i+1])
             comb += intermed[i].eq(cur)
 
         # now only select those bits where the mask starts
-        out = [intermed[0]] # LSB of first part always set
-        for i in range(width-1): # length of partition gates
+        out = [intermed[0]]  # LSB of first part always set
+        for i in range(width-1):  # length of partition gates
             out.append(self.gates[i] & intermed[i+1])
         comb += self.output.eq(Cat(*out))
 
@@ -116,4 +122,3 @@ if __name__ == "__main__":
     # then check with yosys "read_ilang ripple.il; show top"
     alu = MoveMSBDown(width=4)
     main(alu, ports=[alu.results_in, alu.gates, alu.output])
-

@@ -23,7 +23,6 @@ class Driver(Elaboratable):
         sig_in = Signal.like(dut.sig_in)
         count = Signal.like(dut.lz)
 
-
         m.d.comb += [
             sig_in.eq(AnyConst(width)),
             dut.sig_in.eq(sig_in),
@@ -43,20 +42,23 @@ class Driver(Elaboratable):
         comb += result_sig.eq(result)
 
         comb += Assert(result_sig == count)
-        
+
         # setup the inputs and outputs of the DUT as anyconst
 
         return m
+
 
 class CLZTestCase(FHDLTestCase):
     def test_proof(self):
         module = Driver()
         self.assertFormal(module, mode="bmc", depth=4)
+
     def test_ilang(self):
         dut = Driver()
         vl = rtlil.convert(dut, ports=[])
         with open("clz.il", "w") as f:
             f.write(vl)
+
 
 if __name__ == '__main__':
     unittest.main()

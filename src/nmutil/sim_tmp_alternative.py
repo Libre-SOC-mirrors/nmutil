@@ -41,7 +41,7 @@ except ImportError:
                                        Delay, Settle, Tick, Passive)
 
 nmigen_sim_environ_variable = os.environ.get("NMIGEN_SIM_MODE") \
-                              or "pysim"
+    or "pysim"
 """Detected run-time engine from environment"""
 
 

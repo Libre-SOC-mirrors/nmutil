@@ -16,8 +16,9 @@ from nmutil.singlepipe import StageChain
 class PipeModBase(Elaboratable):
     """PipeModBase: common code between nearly every pipeline module
     """
+
     def __init__(self, pspec, modname):
-        self.modname = modname # use this to give a name to this module
+        self.modname = modname  # use this to give a name to this module
         self.pspec = pspec
         self.i = self.ispec()
         self.o = self.ospec()
@@ -39,6 +40,7 @@ class PipeModBaseChain(DynamicPipe):
     and uses pspec.pipekls to dynamically select the pipeline type
     Also conforms to the Pipeline Stage API
     """
+
     def __init__(self, pspec):
         self.pspec = pspec
         self.chain = self.get_chain()
@@ -55,10 +57,10 @@ class PipeModBaseChain(DynamicPipe):
         return self.chain[-1].ospec()
 
     def process(self, i):
-        return self.o # ... returned here (see setup comment below)
+        return self.o  # ... returned here (see setup comment below)
 
     def setup(self, m, i):
         """ links module to inputs and outputs
         """
-        StageChain(self.chain).setup(m, i) # input linked here, through chain
-        self.o = self.chain[-1].o # output is the last thing in the chain...
+        StageChain(self.chain).setup(m, i)  # input linked here, through chain
+        self.o = self.chain[-1].o  # output is the last thing in the chain...

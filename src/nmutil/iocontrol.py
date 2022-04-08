@@ -42,9 +42,9 @@ class Object:
         self.fields = OrderedDict()
 
     def __setattr__(self, k, v):
-        print ("kv", k, v)
+        print("kv", k, v)
         if (k.startswith('_') or k in ["fields", "name", "src_loc"] or
-           k in dir(Object) or "fields" not in self.__dict__):
+                k in dir(Object) or "fields" not in self.__dict__):
             return object.__setattr__(self, k, v)
         self.fields[k] = v
 
@@ -67,16 +67,16 @@ class Object:
         res = []
         for (k, o) in self.fields.items():
             i = getattr(inp, k)
-            print ("eq", o, i)
+            print("eq", o, i)
             rres = o.eq(i)
             if isinstance(rres, Sequence):
                 res += rres
             else:
                 res.append(rres)
-        print (res)
+        print(res)
         return res
 
-    def ports(self): # being called "keys" would be much better
+    def ports(self):  # being called "keys" would be much better
         return list(self)
 
 
@@ -92,16 +92,15 @@ def add_prefix_to_record_signals(prefix, record):
 
 class RecordObject(Record):
     def __init__(self, layout=None, name=None):
-        #if name is None:
+        # if name is None:
         #    name = tracer.get_var_name(depth=2, default="$ro")
         Record.__init__(self, layout=layout or [], name=name)
-
 
     def __setattr__(self, k, v):
         #print(f"RecordObject setattr({k}, {v})")
         #print (dir(Record))
         if (k.startswith('_') or k in ["fields", "name", "src_loc"] or
-           k in dir(Record) or "fields" not in self.__dict__):
+                k in dir(Record) or "fields" not in self.__dict__):
             return object.__setattr__(self, k, v)
 
         if self.name is None:
@@ -126,7 +125,7 @@ class RecordObject(Record):
         self.layout.fields.update(newlayout)
 
     def __iter__(self):
-        for x in self.fields.values(): # remember: fields is an OrderedDict
+        for x in self.fields.values():  # remember: fields is an OrderedDict
             if hasattr(x, 'ports'):
                 yield from x.ports()
             elif isinstance(x, Record):
@@ -137,7 +136,7 @@ class RecordObject(Record):
             else:
                 yield x
 
-    def ports(self): # would be better being called "keys"
+    def ports(self):  # would be better being called "keys"
         return list(self)
 
 
@@ -151,7 +150,7 @@ class PrevControl(Elaboratable):
     """
 
     def __init__(self, i_width=1, stage_ctl=False, maskwid=0, offs=0,
-                       name=None):
+                 name=None):
         if name is None:
             name = ""
         n_piv = "p_i_valid"+name
@@ -164,7 +163,7 @@ class PrevControl(Elaboratable):
             self.stop_i = Signal(maskwid)              # prev   >>in  self
         self.i_valid = Signal(i_width, name=n_piv)     # prev   >>in  self
         self._o_ready = Signal(name=n_por)             # prev   <<out self
-        self.i_data = None # XXX MUST BE ADDED BY USER
+        self.i_data = None  # XXX MUST BE ADDED BY USER
         if stage_ctl:
             self.s_o_ready = Signal(name="p_s_o_rdy")    # prev   <<out self
         self.trigger = Signal(reset_less=True)
@@ -174,7 +173,7 @@ class PrevControl(Elaboratable):
         """ public-facing API: indicates (externally) that stage is ready
         """
         if self.stage_ctl:
-            return self.s_o_ready # set dynamically by stage
+            return self.s_o_ready  # set dynamically by stage
         return self._o_ready      # return this when not under dynamic control
 
     def _connect_in(self, prev, direct=False, fn=None,
@@ -219,8 +218,8 @@ class PrevControl(Elaboratable):
 
     def eq(self, i):
         res = [nmoperator.eq(self.i_data, i.i_data),
-                self.o_ready.eq(i.o_ready),
-                self.i_valid.eq(i.i_valid)]
+               self.o_ready.eq(i.o_ready),
+               self.i_valid.eq(i.i_valid)]
         if self.maskwid:
             res.append(self.mask_i.eq(i.mask_i))
         return res
@@ -249,6 +248,7 @@ class NextControl(Elaboratable):
         * i_ready: input from next stage indicating that it can accept data
         * o_data : an output - MUST be added by the USER of this class
     """
+
     def __init__(self, stage_ctl=False, maskwid=0, name=None):
         if name is None:
             name = ""
@@ -258,13 +258,13 @@ class NextControl(Elaboratable):
         self.stage_ctl = stage_ctl
         self.maskwid = maskwid
         if maskwid:
-            self.mask_o = Signal(maskwid) # self out>>  next
-            self.stop_o = Signal(maskwid) # self out>>  next
-        self.o_valid = Signal(name=n_nov) # self out>>  next
-        self.i_ready = Signal(name=n_nir) # self <<in   next
-        self.o_data = None # XXX MUST BE ADDED BY USER
-        #if self.stage_ctl:
-        self.d_valid = Signal(reset=1) # INTERNAL (data valid)
+            self.mask_o = Signal(maskwid)  # self out>>  next
+            self.stop_o = Signal(maskwid)  # self out>>  next
+        self.o_valid = Signal(name=n_nov)  # self out>>  next
+        self.i_ready = Signal(name=n_nir)  # self <<in   next
+        self.o_data = None  # XXX MUST BE ADDED BY USER
+        # if self.stage_ctl:
+        self.d_valid = Signal(reset=1)  # INTERNAL (data valid)
         self.trigger = Signal(reset_less=True)
 
     @property
@@ -289,8 +289,8 @@ class NextControl(Elaboratable):
                 res.append(nxt.stop_i.eq(self.stop_o))
         if do_data:
             res.append(nmoperator.eq(nxt.i_data, self.o_data))
-        print ("connect to next", self, self.maskwid, nxt.i_data,
-                                  do_data, do_stop)
+        print("connect to next", self, self.maskwid, nxt.i_data,
+              do_data, do_stop)
         return res
 
     def _connect_out(self, nxt, direct=False, fn=None,
@@ -331,4 +331,3 @@ class NextControl(Elaboratable):
 
     def ports(self):
         return list(self)
-

@@ -74,17 +74,19 @@ class Queue(FIFOInterface, Elaboratable):
         # deq is "dequeue" (data out, aka "next stage")
         p_o_ready = self.w_rdy
         p_i_valid = self.w_en
-        enq_data = self.w_data # aka p_i_data
+        enq_data = self.w_data  # aka p_i_data
 
         n_o_valid = self.r_rdy
         n_i_ready = self.r_en
-        deq_data = self.r_data # aka n_o_data
+        deq_data = self.r_data  # aka n_o_data
 
         # intermediaries
         ptr_width = bits_for(self.depth - 1) if self.depth > 1 else 0
-        enq_ptr = Signal(ptr_width) # cyclic pointer to "insert" point (wrport)
-        deq_ptr = Signal(ptr_width) # cyclic pointer to "remove" point (rdport)
-        maybe_full = Signal() # not reset_less (set by sync)
+        # cyclic pointer to "insert" point (wrport)
+        enq_ptr = Signal(ptr_width)
+        # cyclic pointer to "remove" point (rdport)
+        deq_ptr = Signal(ptr_width)
+        maybe_full = Signal()  # not reset_less (set by sync)
 
         # temporaries
         do_enq = Signal(reset_less=True)
@@ -96,17 +98,17 @@ class Queue(FIFOInterface, Elaboratable):
         enq_max = Signal(reset_less=True)
         deq_max = Signal(reset_less=True)
 
-        m.d.comb += [ptr_match.eq(enq_ptr == deq_ptr), # read-ptr = write-ptr
+        m.d.comb += [ptr_match.eq(enq_ptr == deq_ptr),  # read-ptr = write-ptr
                      ptr_diff.eq(enq_ptr - deq_ptr),
                      enq_max.eq(enq_ptr == self.depth - 1),
                      deq_max.eq(deq_ptr == self.depth - 1),
                      empty.eq(ptr_match & ~maybe_full),
                      full.eq(ptr_match & maybe_full),
-                     do_enq.eq(p_o_ready & p_i_valid), # write conditions ok
-                     do_deq.eq(n_i_ready & n_o_valid), # read conditions ok
+                     do_enq.eq(p_o_ready & p_i_valid),  # write conditions ok
+                     do_deq.eq(n_i_ready & n_o_valid),  # read conditions ok
 
                      # set r_rdy and w_rdy (NOTE: see pipe mode below)
-                     n_o_valid.eq(~empty), # cannot read if empty!
+                     n_o_valid.eq(~empty),  # cannot read if empty!
                      p_o_ready.eq(~full),  # cannot write if full!
 
                      # set up memory and connect to input and output
@@ -114,8 +116,9 @@ class Queue(FIFOInterface, Elaboratable):
                      ram_write.data.eq(enq_data),
                      ram_write.en.eq(do_enq),
                      ram_read.addr.eq(deq_ptr),
-                     deq_data.eq(ram_read.data) # NOTE: overridden in fwft mode
-                    ]
+                     # NOTE: overridden in fwft mode
+                     deq_data.eq(ram_read.data)
+                     ]
 
         # under write conditions, SRAM write-pointer moves on next clock
         with m.If(do_enq):

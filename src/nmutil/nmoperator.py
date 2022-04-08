@@ -41,6 +41,7 @@ class Visitor2:
         python object, enumerate them, find out the list of Signals that way,
         and assign them.
     """
+
     def iterator2(self, o, i):
         if isinstance(o, dict):
             yield from self.dict_iter2(o, i)
@@ -83,10 +84,10 @@ class Visitor2:
                 val = ai.fields
             else:
                 val = ai
-            if hasattr(val, field_name): # check for attribute
+            if hasattr(val, field_name):  # check for attribute
                 val = getattr(val, field_name)
             else:
-                val = val[field_name] # dictionary-style specification
+                val = val[field_name]  # dictionary-style specification
             yield from self.iterator2(ao.fields[field_name], val)
 
     def record_iter2(self, ao, ai):
@@ -95,10 +96,10 @@ class Visitor2:
                 val = ai.fields
             else:
                 val = ai
-            if hasattr(val, field_name): # check for attribute
+            if hasattr(val, field_name):  # check for attribute
                 val = getattr(val, field_name)
             else:
-                val = val[field_name] # dictionary-style specification
+                val = val[field_name]  # dictionary-style specification
             yield from self.iterator2(ao.fields[field_name], val)
 
     def arrayproxy_iter2(self, ao, ai):
@@ -120,6 +121,7 @@ class Visitor:
     """ a helper class for iterating single-argument compound data structures.
         similar to Visitor2.
     """
+
     def iterate(self, i):
         """ iterate a compound structure recursively using yield
         """
@@ -141,10 +143,10 @@ class Visitor:
                 val = ai.fields
             else:
                 val = ai
-            if hasattr(val, field_name): # check for attribute
+            if hasattr(val, field_name):  # check for attribute
                 val = getattr(val, field_name)
             else:
-                val = val[field_name] # dictionary-style specification
+                val = val[field_name]  # dictionary-style specification
             #print ("recidx", idx, field_name, field_shape, val)
             yield from self.iterate(val)
 
@@ -181,8 +183,6 @@ def cat(i):
     """ flattens a compound structure recursively using Cat
     """
     from nmigen._utils import flatten
-    #res = list(flatten(i)) # works (as of nmigen commit f22106e5) HOWEVER...
-    res = list(Visitor().iterate(i)) # needed because input may be a sequence
+    # res = list(flatten(i)) # works (as of nmigen commit f22106e5) HOWEVER...
+    res = list(Visitor().iterate(i))  # needed because input may be a sequence
     return Cat(*res)
-
-

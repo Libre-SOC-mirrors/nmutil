@@ -118,10 +118,10 @@ class StageCls(metaclass=ABCMeta):
     def ispec(self): pass       # REQUIRED
     @abstractmethod
     def ospec(self): pass       # REQUIRED
-    #@abstractmethod
-    #def setup(self, m, i): pass # OPTIONAL
-    #@abstractmethod
-    #def process(self, i): pass  # OPTIONAL
+    # @abstractmethod
+    # def setup(self, m, i): pass # OPTIONAL
+    # @abstractmethod
+    # def process(self, i): pass  # OPTIONAL
 
 
 class Stage(metaclass=ABCMeta):
@@ -140,12 +140,12 @@ class Stage(metaclass=ABCMeta):
     @abstractmethod
     def ospec(): pass
 
-    #@staticmethod
-    #@abstractmethod
+    # @staticmethod
+    # @abstractmethod
     #def setup(m, i): pass
 
-    #@staticmethod
-    #@abstractmethod
+    # @staticmethod
+    # @abstractmethod
     #def process(i): pass
 
 
@@ -157,6 +157,7 @@ class StageHelper(Stage):
         it differs from the stage that it wraps in that all the "optional"
         functions are provided (hence the designation "convenience wrapper")
     """
+
     def __init__(self, stage):
         self.stage = stage
         self._ispecfn = None
@@ -197,8 +198,8 @@ class StageHelper(Stage):
         if self.stage is not None and hasattr(self.stage, "setup"):
             self.stage.setup(m, i)
 
-    def _postprocess(self, i): # XXX DISABLED
-        return i # RETURNS INPUT
+    def _postprocess(self, i):  # XXX DISABLED
+        return i  # RETURNS INPUT
         if hasattr(self.stage, "postprocess"):
             return self.stage.postprocess(i)
         return i
@@ -243,6 +244,7 @@ class StageChain(StageHelper):
         side-effects (state-based / clock-based input) or conditional
         (inter-chain) dependencies, unless you really know what you are doing.
     """
+
     def __init__(self, chain, specallocate=False):
         assert len(chain) > 0, "stage chain must be non-zero length"
         self.chain = chain
@@ -262,12 +264,13 @@ class StageChain(StageHelper):
             o = _spec(ofn, cname)
             if isinstance(o, Elaboratable):
                 setattr(m.submodules, cname, o)
-            m.d.comb += nmoperator.eq(o, c.process(i)) # process input into "o"
+            # process input into "o"
+            m.d.comb += nmoperator.eq(o, c.process(i))
             if idx == len(self.chain)-1:
                 break
             ifn = self.chain[idx+1].ispec   # new input on next loop
             i = _spec(ifn, 'chainin%d' % (idx+1))
-            m.d.comb += nmoperator.eq(i, o) # assign to next input
+            m.d.comb += nmoperator.eq(i, o)  # assign to next input
         self.o = o
         return self.o                       # last loop is the output
 
@@ -280,6 +283,4 @@ class StageChain(StageHelper):
         return self.o                       # last loop is the output
 
     def process(self, i):
-        return self.o # conform to Stage API: return last-loop output
-
-
+        return self.o  # conform to Stage API: return last-loop output

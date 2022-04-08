@@ -10,6 +10,7 @@ import math
 
 """
 
+
 class CLZ(Elaboratable):
     def __init__(self, width):
         self.width = width
@@ -86,4 +87,3 @@ class CLZ(Elaboratable):
         comb += self.lz.eq(pairs[0][0])
 
         return m
-

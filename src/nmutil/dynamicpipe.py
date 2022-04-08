@@ -27,6 +27,7 @@ import threading
 # list post:
 # http://lists.libre-riscv.org/pipermail/libre-riscv-dev/2019-July/002259.html
 
+
 class Meta(ABCMeta):
     registry = {}
     recursing = threading.local()
@@ -38,11 +39,11 @@ class Meta(ABCMeta):
         if mcls.recursing.check:
             return super().__call__(*args, **kw)
         spec = args[0]
-        base = spec.pipekls # pick up the dynamic class from PipelineSpec, HERE
+        base = spec.pipekls  # pick up the dynamic class from PipelineSpec, HERE
 
         if (cls, base) not in mcls.registry:
-            print ("__call__", args, kw, cls, base,
-                   base.__bases__, cls.__bases__)
+            print("__call__", args, kw, cls, base,
+                  base.__bases__, cls.__bases__)
             mcls.registry[cls, base] = type(
                 cls.__name__,
                 (cls, base) + cls.__bases__[1:],
@@ -74,7 +75,7 @@ class Meta(ABCMeta):
 
 class DynamicPipe(metaclass=Meta):
     def __init__(self, *args):
-        print ("DynamicPipe init", super(), args)
+        print("DynamicPipe init", super(), args)
         super().__init__(self, *args)
 
 
@@ -84,7 +85,7 @@ class DynamicPipe(metaclass=Meta):
 # could hypothetically be passed through the pspec.
 class SimpleHandshakeRedir(SimpleHandshake):
     def __init__(self, mod, *args):
-        print ("redir", mod, args)
+        print("redir", mod, args)
         stage = self
         if args and args[0].stage:
             stage = args[0].stage
@@ -97,6 +98,5 @@ class MaskCancellableRedir(MaskCancellable):
         maskwid = args[0].maskwid
         if args[0].stage:
             stage = args[0].stage
-        print ("redir mask", mod, args, maskwid)
+        print("redir mask", mod, args, maskwid)
         MaskCancellable.__init__(self, stage, maskwid)
-

@@ -4,8 +4,8 @@
 from nmutil.nmoperator import eq
 from nmutil.iocontrol import (PrevControl, NextControl)
 from nmutil.singlepipe import (PrevControl, NextControl, ControlBase,
-                        StageCls, Stage, StageChain,
-                        BufferedHandshake, UnbufferedPipeline)
+                               StageCls, Stage, StageChain,
+                               BufferedHandshake, UnbufferedPipeline)
 
 from nmigen import Signal, Module
 from nmigen.cli import verilog, rtlil

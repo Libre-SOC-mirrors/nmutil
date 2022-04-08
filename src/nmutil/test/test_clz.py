@@ -16,7 +16,6 @@ class CLZTestCase(unittest.TestCase):
         sig_in = Signal.like(dut.sig_in)
         count = Signal.like(dut.lz)
 
-
         m.d.comb += [
             dut.sig_in.eq(sig_in),
             count.eq(dut.lz)]

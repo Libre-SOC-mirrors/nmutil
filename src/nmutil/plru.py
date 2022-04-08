@@ -63,7 +63,7 @@ class PLRU(Elaboratable):
                     shift = LOG_TLB - lvl
                     new_idx = Const(~((i >> (shift-1)) & 1), 1)
                     plru_idx = idx_base + (i >> shift)
-                    #print("plru", i, lvl, hex(idx_base),
+                    # print("plru", i, lvl, hex(idx_base),
                     #      plru_idx, shift, new_idx)
                     m.d.sync += plru_tree[plru_idx].eq(new_idx)
 
@@ -91,8 +91,8 @@ class PLRU(Elaboratable):
                 new_idx = (i >> (shift-1)) & 1
                 plru_idx = idx_base + (i >> shift)
                 plru = Signal(reset_less=True,
-                              name="plru-%d-%d-%d-%d" % \
-                                    (i, lvl, plru_idx, new_idx))
+                              name="plru-%d-%d-%d-%d" %
+                              (i, lvl, plru_idx, new_idx))
                 m.d.comb += plru.eq(plru_tree[plru_idx])
                 if new_idx:
                     en.append(~plru)  # yes inverted (using bool() below)
@@ -134,8 +134,8 @@ class PLRUs(Elaboratable):
         comb += te.n.eq(~self.valid)
         comb += te.i.eq(self.index)
 
-        out = Array(Signal(self.n_bits, name="plru_out%d" % x) \
-                             for x in range(self.n_plrus))
+        out = Array(Signal(self.n_bits, name="plru_out%d" % x)
+                    for x in range(self.n_plrus))
 
         for i in range(self.n_plrus):
             # PLRU interface
@@ -160,10 +160,7 @@ if __name__ == '__main__':
     with open("test_plru.il", "w") as f:
         f.write(vl)
 
-
     dut = PLRUs(4, 2)
     vl = rtlil.convert(dut, ports=dut.ports())
     with open("test_plrus.il", "w") as f:
         f.write(vl)
-
-

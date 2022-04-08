@@ -36,6 +36,7 @@ class PriorityPicker(Elaboratable):
         * reverse_i=True is for convenient reverseal of the input bits
         * reverse_o=True is for convenient reversal of the output bits
     """
+
     def __init__(self, wid, lsb_mode=False, reverse_i=False, reverse_o=False):
         self.wid = wid
         # inputs
@@ -44,14 +45,14 @@ class PriorityPicker(Elaboratable):
         self.reverse_o = reverse_o
         self.i = Signal(wid, reset_less=True)
         self.o = Signal(wid, reset_less=True)
-        self.en_o = Signal(reset_less=True) # true if any output is true
+        self.en_o = Signal(reset_less=True)  # true if any output is true
 
     def elaborate(self, platform):
         m = Module()
 
         # works by saying, "if all previous bits were zero, we get a chance"
         res = []
-        ni = Signal(self.wid, reset_less = True)
+        ni = Signal(self.wid, reset_less=True)
         i = list(self.i)
         if self.reverse_i:
             i.reverse()
@@ -60,7 +61,7 @@ class PriorityPicker(Elaboratable):
         if self.lsb_mode:
             prange.reverse()
         for n in prange:
-            t = Signal(name="t%d" % n, reset_less = True)
+            t = Signal(name="t%d" % n, reset_less=True)
             res.append(t)
             if n == 0:
                 m.d.comb += t.eq(i[n])
@@ -71,7 +72,7 @@ class PriorityPicker(Elaboratable):
         # we like Cat(*xxx).  turn lists into concatenated bits
         m.d.comb += self.o.eq(Cat(*res))
         # useful "is any output enabled" signal
-        m.d.comb += self.en_o.eq(self.o.bool()) # true if 1 input is true
+        m.d.comb += self.en_o.eq(self.o.bool())  # true if 1 input is true
 
         return m
 
@@ -95,16 +96,16 @@ class MultiPriorityPicker(Elaboratable):
 
         Also outputted (optional): an index for each picked "thing".
     """
+
     def __init__(self, wid, levels, indices=False, multiin=False):
         self.levels = levels
         self.wid = wid
         self.indices = indices
         self.multiin = multiin
 
-
         if multiin:
             # multiple inputs, multiple outputs.
-            i_l = [] # array of picker outputs
+            i_l = []  # array of picker outputs
             for j in range(self.levels):
                 i = Signal(self.wid, name="i_%d" % j, reset_less=True)
                 i_l.append(i)
@@ -114,7 +115,7 @@ class MultiPriorityPicker(Elaboratable):
             self.i = Signal(self.wid, reset_less=True)
 
         # create array of (single-bit) outputs (unary)
-        o_l = [] # array of picker outputs
+        o_l = []  # array of picker outputs
         for j in range(self.levels):
             o = Signal(self.wid, name="o_%d" % j, reset_less=True)
             o_l.append(o)
@@ -128,7 +129,7 @@ class MultiPriorityPicker(Elaboratable):
 
         # add an array of indices
         lidx = math.ceil(math.log2(self.levels))
-        idx_o = [] # store the array of indices
+        idx_o = []  # store the array of indices
         for j in range(self.levels):
             i = Signal(lidx, name="idxo_%d" % j, reset_less=True)
             idx_o.append(i)
@@ -160,10 +161,10 @@ class MultiPriorityPicker(Elaboratable):
                 p_mask = Const(0, self.wid)
             else:
                 mask = Signal(self.wid, name="m_%d" % j, reset_less=True)
-                comb += mask.eq(prev_pp.o | p_mask) # accumulate output bits
+                comb += mask.eq(prev_pp.o | p_mask)  # accumulate output bits
                 comb += pp.i.eq(i & ~mask)          # mask out input
                 p_mask = mask
-            i = pp.i # for input to next round
+            i = pp.i  # for input to next round
             prev_pp = pp
 
         # accumulate the enables

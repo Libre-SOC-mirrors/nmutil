@@ -28,6 +28,7 @@ class Shifter(Elaboratable):
 
         * ``n_o_valid`` and ``n_i_ready``: handshake
     """
+
     def __init__(self, width):
         self.width = width
         """data width"""

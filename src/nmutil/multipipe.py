@@ -32,6 +32,7 @@ from nmutil.iocontrol import NextControl, PrevControl
 class MultiInControlBase(Elaboratable):
     """ Common functions for Pipeline API
     """
+
     def __init__(self, in_multi=None, p_len=1, maskwid=0, routemask=False):
         """ Multi-input Control class.  Conforms to same API as ControlBase...
             mostly.  has additional indices to the *multiple* input stages
@@ -45,16 +46,16 @@ class MultiInControlBase(Elaboratable):
         """
         self.routemask = routemask
         # set up input and output IO ACK (prev/next ready/valid)
-        print ("multi_in", self, maskwid, p_len, routemask)
+        print("multi_in", self, maskwid, p_len, routemask)
         p = []
         for i in range(p_len):
             p.append(PrevControl(in_multi, maskwid=maskwid))
         self.p = Array(p)
         if routemask:
-            nmaskwid = maskwid # straight route mask mode
+            nmaskwid = maskwid  # straight route mask mode
         else:
-            nmaskwid = maskwid * p_len # fan-in mode
-        self.n = NextControl(maskwid=nmaskwid) # masks fan in (Cat)
+            nmaskwid = maskwid * p_len  # fan-in mode
+        self.n = NextControl(maskwid=nmaskwid)  # masks fan in (Cat)
 
     def connect_to_next(self, nxt, p_idx=0):
         """ helper function to connect to the next stage data/valid/ready.
@@ -101,6 +102,7 @@ class MultiInControlBase(Elaboratable):
 class MultiOutControlBase(Elaboratable):
     """ Common functions for Pipeline API
     """
+
     def __init__(self, n_len=1, in_multi=None, maskwid=0, routemask=False):
         """ Multi-output Control class.  Conforms to same API as ControlBase...
             mostly.  has additional indices to the multiple *output* stages
@@ -115,9 +117,9 @@ class MultiOutControlBase(Elaboratable):
         """
 
         if routemask:
-            nmaskwid = maskwid # straight route mask mode
+            nmaskwid = maskwid  # straight route mask mode
         else:
-            nmaskwid = maskwid * n_len # fan-out mode
+            nmaskwid = maskwid * n_len  # fan-out mode
 
         # set up input and output IO ACK (prev/next ready/valid)
         self.p = PrevControl(in_multi, maskwid=nmaskwid)
@@ -177,17 +179,17 @@ class CombMultiOutPipeline(MultiOutControlBase):
 
     def __init__(self, stage, n_len, n_mux, maskwid=0, routemask=False):
         MultiOutControlBase.__init__(self, n_len=n_len, maskwid=maskwid,
-                                            routemask=routemask)
+                                     routemask=routemask)
         self.stage = stage
         self.maskwid = maskwid
         self.routemask = routemask
         self.n_mux = n_mux
 
         # set up the input and output data
-        self.p.i_data = _spec(stage.ispec, 'i_data') # input type
+        self.p.i_data = _spec(stage.ispec, 'i_data')  # input type
         for i in range(n_len):
             name = 'o_data_%d' % i
-            self.n[i].o_data = _spec(stage.ospec, name) # output type
+            self.n[i].o_data = _spec(stage.ospec, name)  # output type
 
     def process(self, i):
         if hasattr(self.stage, "process"):
@@ -197,18 +199,18 @@ class CombMultiOutPipeline(MultiOutControlBase):
     def elaborate(self, platform):
         m = MultiOutControlBase.elaborate(self, platform)
 
-        if hasattr(self.n_mux, "elaborate"): # TODO: identify submodule?
+        if hasattr(self.n_mux, "elaborate"):  # TODO: identify submodule?
             m.submodules.n_mux = self.n_mux
 
         # need buffer register conforming to *input* spec
-        r_data = _spec(self.stage.ispec, 'r_data') # input type
+        r_data = _spec(self.stage.ispec, 'r_data')  # input type
         if hasattr(self.stage, "setup"):
             self.stage.setup(m, r_data)
 
         # multiplexer id taken from n_mux
         muxid = self.n_mux.m_id
-        print ("self.n_mux", self.n_mux)
-        print ("self.n_mux.m_id", self.n_mux.m_id)
+        print("self.n_mux", self.n_mux)
+        print("self.n_mux.m_id", self.n_mux.m_id)
 
         self.n_mux.m_id.name = "m_id"
 
@@ -216,7 +218,7 @@ class CombMultiOutPipeline(MultiOutControlBase):
         p_i_valid = Signal(reset_less=True)
         pv = Signal(reset_less=True)
         m.d.comb += p_i_valid.eq(self.p.i_valid_test)
-        #m.d.comb += pv.eq(self.p.i_valid) #& self.n[muxid].i_ready)
+        # m.d.comb += pv.eq(self.p.i_valid) #& self.n[muxid].i_ready)
         m.d.comb += pv.eq(self.p.i_valid & self.p.o_ready)
 
         # all outputs to next stages first initialised to zero (invalid)
@@ -224,18 +226,17 @@ class CombMultiOutPipeline(MultiOutControlBase):
         for i in range(len(self.n)):
             m.d.comb += self.n[i].o_valid.eq(0)
         if self.routemask:
-            #with m.If(pv):
+            # with m.If(pv):
             m.d.comb += self.n[muxid].o_valid.eq(pv)
             m.d.comb += self.p.o_ready.eq(self.n[muxid].i_ready)
         else:
             data_valid = self.n[muxid].o_valid
             m.d.comb += self.p.o_ready.eq(self.n[muxid].i_ready)
-            m.d.comb += data_valid.eq(p_i_valid | \
-                                    (~self.n[muxid].i_ready & data_valid))
-
+            m.d.comb += data_valid.eq(p_i_valid |
+                                      (~self.n[muxid].i_ready & data_valid))
 
         # send data on
-        #with m.If(pv):
+        # with m.If(pv):
         m.d.comb += eq(r_data, self.p.i_data)
         #m.d.comb += eq(self.n[muxid].o_data, self.process(r_data))
         for i in range(len(self.n)):
@@ -243,13 +244,13 @@ class CombMultiOutPipeline(MultiOutControlBase):
                 m.d.comb += eq(self.n[i].o_data, self.process(r_data))
 
         if self.maskwid:
-            if self.routemask: # straight "routing" mode - treat like data
+            if self.routemask:  # straight "routing" mode - treat like data
                 m.d.comb += self.n[muxid].stop_o.eq(self.p.stop_i)
                 with m.If(pv):
                     m.d.comb += self.n[muxid].mask_o.eq(self.p.mask_i)
             else:
-                ml = [] # accumulate output masks
-                ms = [] # accumulate output stops
+                ml = []  # accumulate output masks
+                ms = []  # accumulate output stops
                 # fan-out mode.
                 # conditionally fan-out mask bits, always fan-out stop bits
                 for i in range(len(self.n)):
@@ -278,7 +279,7 @@ class CombMultiInPipeline(MultiInControlBase):
 
     def __init__(self, stage, p_len, p_mux, maskwid=0, routemask=False):
         MultiInControlBase.__init__(self, p_len=p_len, maskwid=maskwid,
-                                          routemask=routemask)
+                                    routemask=routemask)
         self.stage = stage
         self.maskwid = maskwid
         self.p_mux = p_mux
@@ -286,7 +287,7 @@ class CombMultiInPipeline(MultiInControlBase):
         # set up the input and output data
         for i in range(p_len):
             name = 'i_data_%d' % i
-            self.p[i].i_data = _spec(stage.ispec, name) # input type
+            self.p[i].i_data = _spec(stage.ispec, name)  # input type
         self.n.o_data = _spec(stage.ospec, 'o_data')
 
     def process(self, i):
@@ -307,15 +308,15 @@ class CombMultiInPipeline(MultiInControlBase):
         p_len = len(self.p)
         for i in range(p_len):
             name = 'r_%d' % i
-            r = _spec(self.stage.ispec, name) # input type
+            r = _spec(self.stage.ispec, name)  # input type
             r_data.append(r)
             data_valid.append(Signal(name="data_valid", reset_less=True))
             p_i_valid.append(Signal(name="p_i_valid", reset_less=True))
             n_i_readyn.append(Signal(name="n_i_readyn", reset_less=True))
             if hasattr(self.stage, "setup"):
-                print ("setup", self, self.stage, r)
+                print("setup", self, self.stage, r)
                 self.stage.setup(m, r)
-        if True: # len(r_data) > 1: # hmm always create an Array even of len 1
+        if True:  # len(r_data) > 1: # hmm always create an Array even of len 1
             p_i_valid = Array(p_i_valid)
             n_i_readyn = Array(n_i_readyn)
             data_valid = Array(data_valid)
@@ -323,7 +324,7 @@ class CombMultiInPipeline(MultiInControlBase):
         nirn = Signal(reset_less=True)
         m.d.comb += nirn.eq(~self.n.i_ready)
         mid = self.p_mux.m_id
-        print ("CombMuxIn mid", self, self.stage, self.routemask, mid, p_len)
+        print("CombMuxIn mid", self, self.stage, self.routemask, mid, p_len)
         for i in range(p_len):
             m.d.comb += data_valid[i].eq(0)
             m.d.comb += n_i_readyn[i].eq(1)
@@ -346,8 +347,8 @@ class CombMultiInPipeline(MultiInControlBase):
             av.append(data_valid[i])
         anyvalid = Cat(*av)
         m.d.comb += self.n.o_valid.eq(anyvalid.bool())
-        m.d.comb += data_valid[mid].eq(p_i_valid[mid] | \
-                                    (n_i_readyn[mid] ))
+        m.d.comb += data_valid[mid].eq(p_i_valid[mid] |
+                                       (n_i_readyn[mid]))
 
         if self.routemask:
             # XXX hack - fixes loop
@@ -368,8 +369,8 @@ class CombMultiInPipeline(MultiInControlBase):
                     with m.If(mid == i):
                         m.d.comb += eq(self.n.o_data, r_data[i])
         else:
-            ml = [] # accumulate output masks
-            ms = [] # accumulate output stops
+            ml = []  # accumulate output masks
+            ms = []  # accumulate output stops
             for i in range(p_len):
                 vr = Signal(reset_less=True)
                 p = self.p[i]
@@ -417,7 +418,7 @@ class NonCombMultiInPipeline(MultiInControlBase):
 
     def __init__(self, stage, p_len, p_mux, maskwid=0, routemask=False):
         MultiInControlBase.__init__(self, p_len=p_len, maskwid=maskwid,
-                                          routemask=routemask)
+                                    routemask=routemask)
         self.stage = stage
         self.maskwid = maskwid
         self.p_mux = p_mux
@@ -425,7 +426,7 @@ class NonCombMultiInPipeline(MultiInControlBase):
         # set up the input and output data
         for i in range(p_len):
             name = 'i_data_%d' % i
-            self.p[i].i_data = _spec(stage.ispec, name) # input type
+            self.p[i].i_data = _spec(stage.ispec, name)  # input type
         self.n.o_data = _spec(stage.ospec, 'o_data')
 
     def process(self, i):
@@ -445,12 +446,12 @@ class NonCombMultiInPipeline(MultiInControlBase):
         p_len = len(self.p)
         for i in range(p_len):
             name = 'r_%d' % i
-            r = _spec(self.stage.ispec, name) # input type
+            r = _spec(self.stage.ispec, name)  # input type
             r_data.append(r)
             r_busy.append(Signal(name="r_busy%d" % i, reset_less=True))
             p_i_valid.append(Signal(name="p_i_valid%d" % i, reset_less=True))
             if hasattr(self.stage, "setup"):
-                print ("setup", self, self.stage, r)
+                print("setup", self, self.stage, r)
                 self.stage.setup(m, r)
         if len(r_data) > 1:
             r_data = Array(r_data)
@@ -460,7 +461,7 @@ class NonCombMultiInPipeline(MultiInControlBase):
         nirn = Signal(reset_less=True)
         m.d.comb += nirn.eq(~self.n.i_ready)
         mid = self.p_mux.m_id
-        print ("CombMuxIn mid", self, self.stage, self.routemask, mid, p_len)
+        print("CombMuxIn mid", self, self.stage, self.routemask, mid, p_len)
         for i in range(p_len):
             m.d.comb += r_busy[i].eq(0)
             m.d.comb += n_i_readyn[i].eq(1)
@@ -481,8 +482,8 @@ class NonCombMultiInPipeline(MultiInControlBase):
             av.append(data_valid[i])
         anyvalid = Cat(*av)
         m.d.comb += self.n.o_valid.eq(anyvalid.bool())
-        m.d.comb += data_valid[mid].eq(p_i_valid[mid] | \
-                                    (n_i_readyn[mid] ))
+        m.d.comb += data_valid[mid].eq(p_i_valid[mid] |
+                                       (n_i_readyn[mid]))
 
         if self.routemask:
             # XXX hack - fixes loop
@@ -501,8 +502,8 @@ class NonCombMultiInPipeline(MultiInControlBase):
                     m.d.comb += eq(self.n.mask_o, self.p[i].mask_i)
                     m.d.comb += eq(r_data[i], self.p[i].i_data)
         else:
-            ml = [] # accumulate output masks
-            ms = [] # accumulate output stops
+            ml = []  # accumulate output masks
+            ms = []  # accumulate output stops
             for i in range(p_len):
                 vr = Signal(reset_less=True)
                 p = self.p[i]
@@ -532,35 +533,35 @@ class NonCombMultiInPipeline(MultiInControlBase):
 
 class CombMuxOutPipe(CombMultiOutPipeline):
     def __init__(self, stage, n_len, maskwid=0, muxidname=None,
-                                     routemask=False):
+                 routemask=False):
         muxidname = muxidname or "muxid"
         # HACK: stage is also the n-way multiplexer
         CombMultiOutPipeline.__init__(self, stage, n_len=n_len,
-                                            n_mux=stage, maskwid=maskwid,
-                                            routemask=routemask)
+                                      n_mux=stage, maskwid=maskwid,
+                                      routemask=routemask)
 
         # HACK: n-mux is also the stage... so set the muxid equal to input muxid
         muxid = getattr(self.p.i_data, muxidname)
-        print ("combmuxout", muxidname, muxid)
+        print("combmuxout", muxidname, muxid)
         stage.m_id = muxid
-
 
 
 class InputPriorityArbiter(Elaboratable):
     """ arbitration module for Input-Mux pipe, baed on PriorityEncoder
     """
+
     def __init__(self, pipe, num_rows):
         self.pipe = pipe
         self.num_rows = num_rows
         self.mmax = int(log(self.num_rows) / log(2))
-        self.m_id = Signal(self.mmax, reset_less=True) # multiplex id
+        self.m_id = Signal(self.mmax, reset_less=True)  # multiplex id
         self.active = Signal(reset_less=True)
 
     def elaborate(self, platform):
         m = Module()
 
         assert len(self.pipe.p) == self.num_rows, \
-                "must declare input to be same size"
+            "must declare input to be same size"
         pe = PriorityEncoder(self.num_rows)
         m.submodules.selector = pe
 
@@ -576,7 +577,7 @@ class InputPriorityArbiter(Elaboratable):
             else:
                 m.d.comb += p_i_valid.eq(self.pipe.p[i].i_valid_test)
             in_ready.append(p_i_valid)
-        m.d.comb += pe.i.eq(Cat(*in_ready)) # array of input "valids"
+        m.d.comb += pe.i.eq(Cat(*in_ready))  # array of input "valids"
         m.d.comb += self.active.eq(~pe.n)   # encoder active (one input valid)
         m.d.comb += self.m_id.eq(pe.o)       # output one active input
 
@@ -584,7 +585,6 @@ class InputPriorityArbiter(Elaboratable):
 
     def ports(self):
         return [self.m_id, self.active]
-
 
 
 class PriorityCombMuxInPipe(CombMultiInPipeline):

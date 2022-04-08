@@ -34,18 +34,20 @@ def treereduce(tree, op, fn=None):
               treereduce(tree, operator.or_, lambda x: getattr(x, "o_data"))
     """
     if fn is None:
-        fn = lambda x: x
+        def fn(x): return x
     if not isinstance(tree, list):
         return tree
     if len(tree) == 1:
         return fn(tree[0])
     if len(tree) == 2:
         return op(fn(tree[0]), fn(tree[1]))
-    s = len(tree) // 2 # splitpoint
+    s = len(tree) // 2  # splitpoint
     return op(treereduce(tree[:s], op, fn),
               treereduce(tree[s:], op, fn))
 
 # chooses assignment of 32 bit or full 64 bit depending on is_32bit
+
+
 def eq32(is_32bit, dest, src):
     return [dest[0:32].eq(src[0:32]),
             dest[32:64].eq(Mux(is_32bit, 0, src[32:64]))]
@@ -71,8 +73,8 @@ def rising_edge(m, sig):
     rising = Signal.like(sig)
     delay.name = "%s_dly" % sig.name
     rising.name = "%s_rise" % sig.name
-    m.d.sync += delay.eq(sig) # 1 clock delay
-    m.d.comb += rising.eq(sig & ~delay) # sig is hi but delay-sig is lo
+    m.d.sync += delay.eq(sig)  # 1 clock delay
+    m.d.comb += rising.eq(sig & ~delay)  # sig is hi but delay-sig is lo
     return rising
 
 

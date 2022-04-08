@@ -22,7 +22,7 @@ class PassThroughStage:
 
     def ospec(self, name):
         return Signal(16, name="%s_dout" % name, reset_less=True)
-                
+
     def process(self, i):
         return i.data
 
@@ -30,12 +30,12 @@ class PassThroughStage:
 class PassThroughDataStage:
     def ispec(self):
         return PassInData()
+
     def ospec(self):
-        return self.ispec() # same as ospec
+        return self.ispec()  # same as ospec
 
     def process(self, i):
-        return i # pass-through
-
+        return i  # pass-through
 
 
 class PassThroughPipe(PassThroughHandshake):
@@ -54,7 +54,7 @@ class OutputTest:
                 muxid = i
             else:
                 muxid = randint(0, dut.num_rows-1)
-            data = randint(0, 255) + (muxid<<8)
+            data = randint(0, 255) + (muxid << 8)
             if muxid not in self.do:
                 self.do[muxid] = []
             self.di.append((data, muxid))
@@ -74,7 +74,7 @@ class OutputTest:
                 yield
                 o_p_ready = yield rs.o_ready
 
-            print ("send", muxid, i, hex(op2))
+            print("send", muxid, i, hex(op2))
 
             yield rs.i_valid.eq(0)
             # wait random period of time before queueing another value
@@ -100,9 +100,9 @@ class OutputTest:
 
             out_v = yield n.o_data
 
-            print ("recv", muxid, out_i, hex(out_v))
+            print("recv", muxid, out_i, hex(out_v))
 
-            assert self.do[muxid][out_i] == out_v # pass-through data
+            assert self.do[muxid][out_i] == out_v  # pass-through data
 
             out_i += 1
 
@@ -140,11 +140,11 @@ class TestSyncToPriorityPipe(Elaboratable):
 
     def ports(self):
         res = [self.p.i_valid, self.p.o_ready] + \
-                self.p.i_data.ports()
+            self.p.i_data.ports()
         for i in range(len(self.n)):
             res += [self.n[i].i_ready, self.n[i].o_valid] + \
-                    [self.n[i].o_data]
-                    #self.n[i].o_data.ports()
+                [self.n[i].o_data]
+            # self.n[i].o_data.ports()
         return res
 
 
@@ -159,6 +159,7 @@ def test1():
                          test.rcv(3), test.rcv(2),
                          test.send()],
                    vcd_name="test_outmux_pipe.vcd")
+
 
 if __name__ == '__main__':
     test1()

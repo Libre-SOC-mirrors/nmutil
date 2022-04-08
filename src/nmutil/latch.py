@@ -45,7 +45,7 @@ def latchregister(m, incoming, outgoing, settrue, name=None):
     else:
         reg = Signal.like(incoming, name=name)
     m.d.comb += outgoing.eq(Mux(settrue, incoming, reg))
-    with m.If(settrue): # pass in some kind of expression/condition here
+    with m.If(settrue):  # pass in some kind of expression/condition here
         m.d.sync += reg.eq(incoming)      # latch input into register
     return reg
 
@@ -65,7 +65,7 @@ class SRLatch(Elaboratable):
         qint = mkname("qint", name)
         qlq_n = mkname("qlq", name)
         self.s = Signal(llen, name=s_n, reset=0)
-        self.r = Signal(llen, name=r_n, reset=(1<<llen)-1) # defaults to off
+        self.r = Signal(llen, name=r_n, reset=(1 << llen)-1)  # defaults to off
         self.q = Signal(llen, name=q_n, reset_less=True)
         self.qn = Signal(llen, name=qn_n, reset_less=True)
         self.qlq = Signal(llen, name=qlq_n, reset_less=True)
@@ -82,7 +82,7 @@ class SRLatch(Elaboratable):
         else:
             m.d.comb += self.q.eq(next_o)
         m.d.comb += self.qn.eq(~self.q)
-        m.d.comb += self.qlq.eq(self.q | self.q_int) # useful output
+        m.d.comb += self.qlq.eq(self.q | self.q_int)  # useful output
 
         return m
 
@@ -113,6 +113,7 @@ def sr_sim(dut):
     yield
     yield
 
+
 def test_sr():
     dut = SRLatch(llen=4)
     vl = rtlil.convert(dut, ports=dut.ports())
@@ -127,6 +128,7 @@ def test_sr():
         f.write(vl)
 
     run_simulation(dut, sr_sim(dut), vcd_name='test_srlatch_async.vcd')
+
 
 if __name__ == '__main__':
     test_sr()
