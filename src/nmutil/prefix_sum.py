@@ -15,19 +15,15 @@ class Op:
     The operation is `items[self.out] = fn(items[self.lhs], items[self.rhs])`.
     The operation is not assumed to be commutative.
     """
-    out: int
-    """the index of the item to output to"""
-    lhs: int
-    """the index of the item the left-hand-side input comes from"""
-    rhs: int
-    """the index of the item the right-hand-side input comes from"""
-    row: int
-    """the row in the prefix-sum diagram"""
+    out: int; """index of the item to output to"""
+    lhs: int; """index of the item the left-hand-side input comes from"""
+    rhs: int; """index of the item the right-hand-side input comes from"""
+    row: int; """row in the prefix-sum diagram"""
 
 
 def prefix_sum_ops(item_count, *, work_efficient=False):
-    """ Get the associative operations needed to compute a parallel prefix-sum of
-    `item_count` items.
+    """ Get the associative operations needed to compute a parallel prefix-sum
+    of `item_count` items.
 
     The operations aren't assumed to be commutative.
 
@@ -150,7 +146,8 @@ def render_prefix_sum_diagram(item_count, *, work_efficient=False,
         ops_by_row[op.row].add(op)
 
     def blank_row():
-        return [_Cell(slant=False, plus=False, tee=False) for _ in range(item_count)]
+        return [_Cell(slant=False, plus=False, tee=False) \
+                for _ in range(item_count)]
 
     cells = [blank_row()]
 
@@ -219,9 +216,10 @@ def render_prefix_sum_diagram(item_count, *, work_efficient=False,
 
 
 if __name__ == "__main__":
-    print("the non-work-efficient algorithm, matches the diagram in wikipedia:")
-    print("https://commons.wikimedia.org/wiki/File:Hillis-Steele_Prefix_Sum.svg")
-    print()
+    print("the non-work-efficient algorithm, matches the diagram in wikipedia:"
+         "\n"
+         "https://commons.wikimedia.org/wiki/File:Hillis-Steele_Prefix_Sum.svg"
+         "\n\n")
     print(render_prefix_sum_diagram(16, work_efficient=False))
     print()
     print()
