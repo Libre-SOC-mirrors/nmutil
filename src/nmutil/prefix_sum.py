@@ -25,7 +25,7 @@ class Op:
     """row in the prefix-sum diagram"""
 
 
-def prefix_sum_ops(item_count, *, work_efficient=False, reduce_only=False):
+def prefix_sum_ops(item_count, *, work_efficient=False):
     """ Get the associative operations needed to compute a parallel prefix-sum
     of `item_count` items.
 
@@ -45,9 +45,6 @@ def prefix_sum_ops(item_count, *, work_efficient=False, reduce_only=False):
         True if the algorithm used should be work-efficient -- has a larger
         depth (about twice as large) but does only `O(N)` operations total
         instead of `O(N*log(N))`.
-    reduce_only: bool
-        True if the work-efficient algorithm should stop after the initial
-        tree-reduction step.
     Returns: Iterable[Op]
         output associative operations.
     """
@@ -64,7 +61,7 @@ def prefix_sum_ops(item_count, *, work_efficient=False, reduce_only=False):
             yield Op(out=i, lhs=i - dist, rhs=i, row=row)
         dist <<= 1
         row += 1
-    if work_efficient and not reduce_only:
+    if work_efficient:
         # express all output items in terms of the computed partial sums.
         dist >>= 1
         while dist >= 1:
