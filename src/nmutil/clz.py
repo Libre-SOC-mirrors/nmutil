@@ -12,6 +12,14 @@ import math
 """
 
 
+def clz(v, width):
+    """count leading zeros."""
+    assert isinstance(width, int) and 0 <= width
+    max_v = (1 << width) - 1
+    assert isinstance(v, int) and 0 <= v <= max_v
+    return max_v.bit_length() - v.bit_length()
+
+
 class CLZ(Elaboratable):
     def __init__(self, width):
         self.width = width
