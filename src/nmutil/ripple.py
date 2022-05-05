@@ -78,7 +78,7 @@ class RippleMSB(Ripple):
     """
 
     def __init__(self, width):
-        Ripple.__init__(self, width, start_lsb=True)
+        Ripple.__init__(self, width, start_lsb=False)
 
 
 class MoveMSBDown(Elaboratable):
