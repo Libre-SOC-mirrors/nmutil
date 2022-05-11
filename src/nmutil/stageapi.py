@@ -197,7 +197,8 @@ class StageHelper(Stage):
 
     def setup(self, m, i):
         if self.stage is not None and hasattr(self.stage, "setup"):
-            self.stage.setup(m, i)
+            if self.stage is not self: # stop infinite recursion
+                self.stage.setup(m, i)
 
     def _postprocess(self, i):  # XXX DISABLED
         return i  # RETURNS INPUT
