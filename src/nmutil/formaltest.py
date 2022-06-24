@@ -49,7 +49,7 @@ class FHDLTestCase(unittest.TestCase):
         wait on
 
         [engines]
-        smtbmc {solver}
+        smtbmc {solver} -- -- --logic=ALL
 
         [script]
         read_ilang top.il
