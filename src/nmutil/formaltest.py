@@ -26,7 +26,7 @@ class FHDLTestCase(unittest.TestCase):
         self.assertEqual(prepare_repr(repr(obj)), prepare_repr(repr_str))
 
     def assertFormal(self, spec, mode="bmc", depth=1, solver="",
-                     base_path="formal_test_temp"):
+                     base_path="formal_test_temp", smtbmc_opts="--logic=ALL"):
         path = get_test_path(self, base_path)
 
         # The sby -f switch seems not fully functional when sby is
@@ -49,7 +49,7 @@ class FHDLTestCase(unittest.TestCase):
         wait on
 
         [engines]
-        smtbmc {solver} -- -- --logic=ALL
+        smtbmc {solver} -- -- {smtbmc_opts}
 
         [script]
         read_ilang top.il
@@ -63,6 +63,7 @@ class FHDLTestCase(unittest.TestCase):
             depth=depth,
             solver=solver,
             script=script,
+            smtbmc_opts=smtbmc_opts,
             rtlil=rtlil.convert(Fragment.get(spec, platform="formal"))
         )
         with subprocess.Popen([require_tool("sby"), "-d", "job"],
