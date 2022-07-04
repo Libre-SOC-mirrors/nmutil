@@ -7,7 +7,7 @@
 from contextlib import contextmanager
 from hashlib import sha256
 
-from nmigen.hdl.ir import Fragment
+from nmigen.hdl.ir import Fragment, ClockDomain
 from nmutil.get_test_path import get_test_path
 from nmigen.sim import Simulator
 from nmigen.back.rtlil import convert
@@ -24,6 +24,8 @@ def hash_256(v):
 def do_sim(test_case, dut, traces=(), ports=None):
     # only elaborate once, cuz users' stupid code breaks if elaborating twice
     dut = Fragment.get(dut, platform=None)
+    if "sync" not in dut.domains:
+        dut.add_domains(ClockDomain("sync"))
     sim = Simulator(dut)
     path = get_test_path(test_case, "sim_test_out")
     path.parent.mkdir(parents=True, exist_ok=True)
