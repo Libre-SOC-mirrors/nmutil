@@ -36,6 +36,8 @@ class PriorityPicker(Elaboratable):
         * msb_mode is for a MSB-priority picker
         * reverse_i=True is for convenient reversal of the input bits
         * reverse_o=True is for convenient reversal of the output bits
+        * `msb_mode=True` is redundant with `reverse_i=True, reverse_o=True`
+            but is allowed for backwards compatibility.
     """
 
     def __init__(self, wid, msb_mode=False, reverse_i=False, reverse_o=False):
