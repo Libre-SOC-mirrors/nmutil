@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: LGPL-3-or-later
-""" Priority Picker: optimised back-to-back PriorityEncoder and Decoder
+""" Priority Picker: optimized back-to-back PriorityEncoder and Decoder
     and MultiPriorityPicker: cascading mutually-exclusive pickers
 
     This work is funded through NLnet under Grant 2019-02-012
@@ -26,27 +26,29 @@
 """
 
 from nmigen import Module, Signal, Cat, Elaboratable, Array, Const, Mux
-from nmigen.cli import verilog, rtlil
+from nmigen.cli import rtlil
 import math
 
 
 class PriorityPicker(Elaboratable):
     """ implements a priority-picker.  input: N bits, output: N bits
 
-        * lsb_mode is for a LSB-priority picker
-        * reverse_i=True is for convenient reverseal of the input bits
+        * msb_mode is for a MSB-priority picker
+        * reverse_i=True is for convenient reversal of the input bits
         * reverse_o=True is for convenient reversal of the output bits
     """
 
-    def __init__(self, wid, lsb_mode=False, reverse_i=False, reverse_o=False):
+    def __init__(self, wid, msb_mode=False, reverse_i=False, reverse_o=False):
         self.wid = wid
         # inputs
-        self.lsb_mode = lsb_mode
+        self.msb_mode = msb_mode
         self.reverse_i = reverse_i
         self.reverse_o = reverse_o
         self.i = Signal(wid, reset_less=True)
         self.o = Signal(wid, reset_less=True)
-        self.en_o = Signal(reset_less=True)  # true if any output is true
+
+        self.en_o = Signal(reset_less=True)
+        "true if any output is true"
 
     def elaborate(self, platform):
         m = Module()
@@ -57,9 +59,11 @@ class PriorityPicker(Elaboratable):
         i = list(self.i)
         if self.reverse_i:
             i.reverse()
+        if self.msb_mode:
+            i.reverse()
         m.d.comb += ni.eq(~Cat(*i))
         prange = list(range(0, self.wid))
-        if self.lsb_mode:
+        if self.msb_mode:
             prange.reverse()
         for n in prange:
             t = Signal(name="t%d" % n, reset_less=True)
