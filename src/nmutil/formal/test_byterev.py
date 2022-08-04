@@ -1,15 +1,12 @@
 # SPDX-License-Identifier: LGPL-3-or-later
 # Copyright 2022 Jacob Lifshay
 
-from functools import reduce
-import operator
 import unittest
-from nmigen.hdl.ast import AnyConst, Assert, Signal, Const, Assume
+from nmigen.hdl.ast import AnyConst, Assert, Signal, Assume
 from nmigen.hdl.dsl import Module
 from nmutil.formaltest import FHDLTestCase
 from nmutil.byterev import byte_reverse
 from nmutil.grev import grev
-from nmutil.sim_util import write_il
 
 
 VALID_BYTE_REVERSE_LENGTHS = tuple(1 << i for i in range(4))
