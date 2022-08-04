@@ -73,4 +73,4 @@ class FHDLTestCase(unittest.TestCase):
                               stdout=subprocess.PIPE) as proc:
             stdout, stderr = proc.communicate(config)
             if proc.returncode != 0:
-                self.fail("Formal verification failed:\n" + stdout)
+                self.fail(f"Formal verification failed:\nIn {path}\n{stdout}")
