@@ -15,6 +15,8 @@ def byte_reverse(m, name, data, length):
 
     nmigen Signal.word_select may only take a fixed length.  we need
     bigendian byte-reverse, half-word reverse, word and dword reverse.
+
+    This only outputs the first `length` bytes, higher bytes are zeroed.
     """
     comb = m.d.comb
     data_r = Signal.like(data, name=name)
