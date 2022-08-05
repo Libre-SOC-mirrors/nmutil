@@ -8,7 +8,7 @@ from nmigen.lib.coding import Decoder
 
 
 class PLRU(Elaboratable):
-    """ PLRU - Pseudo Least Recently Used Replacement
+    r""" PLRU - Pseudo Least Recently Used Replacement
 
         PLRU-tree indexing:
         lvl0        0
