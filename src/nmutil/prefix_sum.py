@@ -5,25 +5,20 @@
 # of Horizon 2020 EU Programme 957073.
 
 from collections import defaultdict
-from dataclasses import dataclass
 import operator
 from nmigen.hdl.ast import Value, Const
 
 
-@dataclass(order=True, unsafe_hash=True, frozen=True)
 class Op:
     """An associative operation in a prefix-sum.
     The operation is `items[self.out] = fn(items[self.lhs], items[self.rhs])`.
     The operation is not assumed to be commutative.
     """
-    out: int
-    """index of the item to output to"""
-    lhs: int
-    """index of the item the left-hand-side input comes from"""
-    rhs: int
-    """index of the item the right-hand-side input comes from"""
-    row: int
-    """row in the prefix-sum diagram"""
+    def __init__(self,*, out, lhs, rhs, row):
+        self.out = out; "index of the item to output to"
+        self.lhs = lhs; "index of item the left-hand-side input comes from"
+        self.rhs = rhs; "index of item the right-hand-side input comes from"
+        self.row = row; "row in the prefix-sum diagram"
 
 
 def prefix_sum_ops(item_count, *, work_efficient=False):
@@ -51,7 +46,7 @@ def prefix_sum_ops(item_count, *, work_efficient=False):
     """
     assert isinstance(item_count, int)
     # compute the partial sums using a set of binary trees
-    # this is the first half of the work-efficient algorithm and the whole of
+    # first half of the work-efficient algorithm and the whole of
     # the non-work-efficient algorithm.
     dist = 1
     row = 0
@@ -102,11 +97,11 @@ def prefix_sum(items, fn=operator.add, *, work_efficient=False):
     return items
 
 
-@dataclass
 class _Cell:
-    slant: bool
-    plus: bool
-    tee: bool
+    def __init__(self, *, slant, plus, tee):
+        self.slant = slant
+        self.plus = plus
+        self.tee = tee
 
 
 def render_prefix_sum_diagram(item_count, *, work_efficient=False,
