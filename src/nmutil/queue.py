@@ -23,8 +23,7 @@
 # TO PROVIDE MAINTENANCE, SUPPORT, UPDATES, ENHANCEMENTS, OR
 # MODIFICATIONS.
 
-from nmigen.compat.fhdl.specials import Memory
-from nmigen import Module, Signal, Mux, Elaboratable
+from nmigen import Module, Signal, Mux, Elaboratable, Memory
 from nmigen.utils import bits_for
 from nmigen.cli import main
 from nmigen.lib.fifo import FIFOInterface
@@ -62,8 +61,8 @@ class Queue(FIFOInterface, Elaboratable):
         m = Module()
 
         # set up an SRAM.  XXX bug in Memory: cannot create SRAM of depth 1
-        ram = Memory(self.width, self.depth if self.depth > 1 else 2)
-        m.submodules.ram = ram
+        ram = Memory(width=self.width,
+                     depth=self.depth if self.depth > 1 else 2)
         m.submodules.ram_read = ram_read = ram.read_port(domain="comb")
         m.submodules.ram_write = ram_write = ram.write_port()
 
