@@ -44,7 +44,6 @@ def prefix_sum_ops(item_count, *, work_efficient=False):
     Returns: Iterable[Op]
         output associative operations.
     """
-    assert isinstance(item_count, int)
     # compute the partial sums using a set of binary trees
     # first half of the work-efficient algorithm and the whole of
     # the non-work-efficient algorithm.
@@ -137,12 +136,8 @@ def render_prefix_sum_diagram(item_count, *, work_efficient=False,
     Returns: str
         rendered diagram
     """
-    assert isinstance(item_count, int)
-    assert isinstance(padding, int)
     ops_by_row = defaultdict(set)
     for op in prefix_sum_ops(item_count, work_efficient=work_efficient):
-        assert op.out == op.rhs, f"can't draw op: {op}"
-        assert op not in ops_by_row[op.row], f"duplicate op: {op}"
         ops_by_row[op.row].add(op)
 
     def blank_row():
@@ -156,7 +151,6 @@ def render_prefix_sum_diagram(item_count, *, work_efficient=False,
         max_distance = max(op.rhs - op.lhs for op in ops)
         cells.extend(blank_row() for _ in range(max_distance))
         for op in ops:
-            assert op.lhs < op.rhs and op.out == op.rhs, f"can't draw op: {op}"
             y = len(cells) - 1
             x = op.out
             cells[y][x].plus = True
@@ -240,10 +234,7 @@ def partial_prefix_sum_ops(needed_outputs, *, work_efficient=False):
     Returns: Iterable[Op]
         output associative operations.
     """
-    def assert_bool(v):
-        assert isinstance(v, bool)
-        return v
-    items_live_flags = [assert_bool(i) for i in needed_outputs]
+    items_live_flags = needed_outputs
     ops = list(prefix_sum_ops(item_count=len(items_live_flags),
                               work_efficient=work_efficient))
     ops_live_flags = [False] * len(ops)
@@ -260,7 +251,6 @@ def partial_prefix_sum_ops(needed_outputs, *, work_efficient=False):
 
 
 def tree_reduction_ops(item_count):
-    assert isinstance(item_count, int) and item_count >= 1
     needed_outputs = (i == item_count - 1 for i in range(item_count))
     return partial_prefix_sum_ops(needed_outputs)
 
@@ -276,13 +266,10 @@ def pop_count(v, *, width=None, process_temporary=lambda v: v):
     if isinstance(v, Value):
         if width is None:
             width = len(v)
-        assert width == len(v)
         bits = [v[i] for i in range(width)]
         if len(bits) == 0:
             return Const(0)
     else:
-        assert isinstance(width, int) and width >= 0
-        assert isinstance(v, int)
         bits = [(v & (1 << i)) != 0 for i in range(width)]
         if len(bits) == 0:
             return 0
