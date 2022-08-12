@@ -16,8 +16,7 @@ from nmigen.hdl.ast import Array, Cat, Repl, Signal
 from nmigen.hdl.dsl import Module
 from nmigen.hdl.ir import Elaboratable
 from nmigen.cli import rtlil
-from dataclasses import dataclass
-
+from nmutil.plain_data import plain_data
 
 class BitwiseMux(Elaboratable):
     """Mux, but treating input/output Signals as bit vectors, rather than
@@ -83,15 +82,35 @@ class BitwiseLut(Elaboratable):
         return list(self.inputs) + [self.lut, self.output]
 
 
-@dataclass
+@plain_data()
 class _TreeMuxNode:
-    """Mux in tree for `TreeBitwiseLut`."""
+    """Mux in tree for `TreeBitwiseLut`.
+
+    Attributes:
     out: Signal
-    container: "TreeBitwiseLut"
-    parent: "_TreeMuxNode | None"
-    child0: "_TreeMuxNode | None"
-    child1: "_TreeMuxNode | None"
+    container: TreeBitwiseLut
+    parent: _TreeMuxNode | None
+    child0: _TreeMuxNode | None
+    child1: _TreeMuxNode | None
     depth: int
+    """
+    __slots__ = "out", "container", "parent", "child0", "child1", "depth"
+
+    def __init__(self, out, container, parent, child0, child1, depth):
+        """ Arguments:
+        out: Signal
+        container: TreeBitwiseLut
+        parent: _TreeMuxNode | None
+        child0: _TreeMuxNode | None
+        child1: _TreeMuxNode | None
+        depth: int
+        """
+        self.out = out
+        self.container = container
+        self.parent = parent
+        self.child0 = child0
+        self.child1 = child1
+        self.depth = depth
 
     @property
     def child_index(self):
