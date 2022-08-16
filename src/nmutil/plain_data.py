@@ -5,6 +5,16 @@ class FrozenPlainDataError(AttributeError):
     pass
 
 
+class __NotSet:
+    """ helper for __repr__ for when fields aren't set """
+
+    def __repr__(self):
+        return "<not set>"
+
+
+__NOT_SET = __NotSet()
+
+
 def _decorator(cls, *, eq, unsafe_hash, order, repr_, frozen):
     if not isinstance(cls, type):
         raise TypeError(
@@ -175,7 +185,7 @@ def _decorator(cls, *, eq, unsafe_hash, order, repr_, frozen):
         def __repr__(self):
             parts = []
             for name in fields:
-                parts.append(f"{name}={getattr(self, name)!r}")
+                parts.append(f"{name}={getattr(self, name, __NOT_SET)!r}")
             return f"{self.__class__.__qualname__}({', '.join(parts)})"
 
         add_method_or_error(__repr__)

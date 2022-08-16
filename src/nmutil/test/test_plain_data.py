@@ -58,6 +58,15 @@ class PlainDataF2(PlainDataF1):
         self.z = z
 
 
+@plain_data()
+class UnsetField:
+    __slots__ = "a", "b"
+
+    def __init__(self, **kwargs):
+        for name, value in kwargs.items():
+            setattr(self, name, value)
+
+
 class TestPlainData(unittest.TestCase):
     def test_fields(self):
         self.assertEqual(fields(PlainData0), ())
@@ -182,6 +191,11 @@ class TestPlainData(unittest.TestCase):
                          "PlainData2(a=1, b=2, x='x', y='y', z=3)")
         self.assertEqual(repr(PlainDataF2(1, 2, x="x", y="y", z=3)),
                          "PlainDataF2(a=1, b=2, x='x', y='y', z=3)")
+        self.assertEqual(repr(UnsetField()),
+                         "UnsetField(a=<not set>, b=<not set>)")
+        self.assertEqual(repr(UnsetField(a=2)), "UnsetField(a=2, b=<not set>)")
+        self.assertEqual(repr(UnsetField(b=3)), "UnsetField(a=<not set>, b=3)")
+        self.assertEqual(repr(UnsetField(a=5, b=3)), "UnsetField(a=5, b=3)")
 
     def test_frozen(self):
         not_frozen = PlainData0()
