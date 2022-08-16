@@ -61,7 +61,7 @@ def _decorator(cls, *, eq, unsafe_hash, order, repr_, frozen):
     for name in slots.keys():
         retval_dict.pop(name, None)
 
-    retval_dict["_fields"] = fields
+    retval_dict["__plain_data_fields"] = fields
 
     def add_method_or_error(value, replace=False):
         name = value.__name__
@@ -220,3 +220,81 @@ def plain_data(*, eq=True, unsafe_hash=False, order=False, repr=True,
         return _decorator(cls, eq=eq, unsafe_hash=unsafe_hash, order=order,
                           repr_=repr, frozen=frozen)
     return decorator
+
+
+def fields(pd):
+    """ get the tuple of field names of the passed-in
+    `@plain_data()`-decorated class.
+
+    This is similar to `dataclasses.fields`, except this returns a
+    different type.
+
+    Returns: tuple[str, ...]
+
+    e.g.:
+    ```
+    @plain_data()
+    class MyBaseClass:
+        __slots__ = "a_field", "field2"
+        def __init__(self, a_field, field2):
+            self.a_field = a_field
+            self.field2 = field2
+
+    assert fields(MyBaseClass) == ("a_field", "field2")
+    assert fields(MyBaseClass(1, 2)) == ("a_field", "field2")
+
+    @plain_data()
+    class MyClass(MyBaseClass):
+        __slots__ = "child_field",
+        def __init__(self, a_field, field2, child_field):
+            super().__init__(a_field=a_field, field2=field2)
+            self.child_field = child_field
+
+    assert fields(MyClass) == ("a_field", "field2", "child_field")
+    assert fields(MyClass(1, 2, 3)) == ("a_field", "field2", "child_field")
+    ```
+    """
+    retval = getattr(pd, "__plain_data_fields", None)
+    if not isinstance(retval, tuple):
+        raise TypeError("the passed-in object must be a class or an instance"
+                        " of a class decorated with @plain_data()")
+    return retval
+
+
+__NOT_SPECIFIED = object()
+
+
+def replace(pd, **changes):
+    """ Return a new instance of the passed-in `@plain_data()`-decorated
+    object, but with the specified fields replaced with new values.
+    This is quite useful with frozen `@plain_data()` classes.
+
+    e.g.:
+    ```
+    @plain_data(frozen=True)
+    class MyClass:
+        __slots__ = "a", "b", "c"
+        def __init__(self, a, b, *, c):
+            self.a = a
+            self.b = b
+            self.c = c
+
+    v1 = MyClass(1, 2, c=3)
+    v2 = replace(v1, b=4)
+    assert v2 == MyClass(a=1, b=4, c=3)
+    assert v2 is not v1
+    ```
+    """
+    kwargs = {}
+    ty = type(pd)
+    # call fields on ty rather than pd to ensure we're not called with a
+    # class rather than an instance.
+    for name in fields(ty):
+        value = changes.pop(name, __NOT_SPECIFIED)
+        if value is __NOT_SPECIFIED:
+            kwargs[name] = getattr(pd, name)
+        else:
+            kwargs[name] = value
+    if len(changes) != 0:
+        raise TypeError(f"can't set unknown field {changes.popitem()[0]!r}")
+    return ty(**kwargs)
