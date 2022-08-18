@@ -9,7 +9,8 @@ from nmutil.formaltest import FHDLTestCase
 from nmutil.sim_util import write_il
 from itertools import accumulate
 import operator
-from nmutil.prefix_sum import (Op, pop_count, prefix_sum,
+from nmutil.popcount import pop_count
+from nmutil.prefix_sum import (Op, prefix_sum,
                                render_prefix_sum_diagram,
                                tree_reduction, tree_reduction_ops)
 import unittest

@@ -277,43 +277,6 @@ def tree_reduction(items, fn=operator.add):
     return items[-1]
 
 
-def pop_count(v, *, width=None, process_temporary=lambda v: v):
-    """return the population count (number of 1 bits) of `v`.
-    Arguments:
-    v: nmigen.Value | int
-        the value to calculate the pop-count of.
-    width: int | None
-        the bit-width of `v`.
-        If `width` is None, then `v` must be a nmigen Value or
-        match `v`'s width.
-    process_temporary: function of (type(v)) -> type(v)
-        called after every addition operation, can be used to introduce
-        `Signal`s for the intermediate values in the pop-count computation
-        like so:
-
-        ```
-        def process_temporary(v):
-            sig = Signal.like(v)
-            m.d.comb += sig.eq(v)
-            return sig
-        ```
-    """
-    if isinstance(v, Value):
-        if width is None:
-            width = len(v)
-        assert width == len(v)
-        bits = [v[i] for i in range(width)]
-        if len(bits) == 0:
-            return Const(0)
-    else:
-        assert width is not None, "width must be given"
-        # v and width are ints
-        bits = [(v & (1 << i)) != 0 for i in range(width)]
-        if len(bits) == 0:
-            return 0
-    return tree_reduction(bits, fn=lambda a, b: process_temporary(a + b))
-
-
 if __name__ == "__main__":
     print("the non-work-efficient algorithm, matches the diagram in wikipedia:"
           "\n"
