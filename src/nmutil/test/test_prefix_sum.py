@@ -70,7 +70,7 @@ class TestPrefixSum(FHDLTestCase):
     def tst_pop_count_int(self, width):
         assert isinstance(width, int)
         for v in range(1 << width):
-            expected = f"{v:b}".count("1")
+            expected = bin(v).count("1") # converts to a string, counts 1s
             with self.subTest(v=v, expected=expected):
                 self.assertEqual(expected, pop_count(v, width=width))
 
