@@ -27,12 +27,17 @@ class PLRU(Elaboratable):
         self.acc_en = Signal()
         self.lru_o = Signal(BITS)
 
+        self._plru_tree = Signal(self.TLBSZ)
+        """ exposed only for testing """
+
+    @property
+    def TLBSZ(self):
+        return 2 * (self.BITS - 1)
+
     def elaborate(self, platform=None):
         m = Module()
 
         # Tree (bit per entry)
-        TLBSZ = 2*(self.BITS-1)
-        plru_tree = Signal(TLBSZ)
 
         # Just predefine which nodes will be set/cleared
         # E.g. for a TLB with 8 entries, the for-loop is semantically
@@ -65,7 +70,7 @@ class PLRU(Elaboratable):
                     plru_idx = idx_base + (i >> shift)
                     # print("plru", i, lvl, hex(idx_base),
                     #      plru_idx, shift, new_idx)
-                    m.d.sync += plru_tree[plru_idx].eq(new_idx)
+                    m.d.sync += self._plru_tree[plru_idx].eq(new_idx)
 
         # Decode tree to write enable signals
         # Next for-loop basically creates the following logic for e.g.
@@ -93,7 +98,7 @@ class PLRU(Elaboratable):
                 plru = Signal(reset_less=True,
                               name="plru-%d-%d-%d-%d" %
                               (i, lvl, plru_idx, new_idx))
-                m.d.comb += plru.eq(plru_tree[plru_idx])
+                m.d.comb += plru.eq(self._plru_tree[plru_idx])
                 if new_idx:
                     en.append(~plru)  # yes inverted (using bool() below)
                 else:
