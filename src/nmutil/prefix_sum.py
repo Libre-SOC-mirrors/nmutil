@@ -19,21 +19,14 @@ class Op:
     __slots__ = "out", "lhs", "rhs", "row"
 
     def __init__(self, out, lhs, rhs, row):
-        self.out = out
-        """index of the item to output to"""
-
-        self.lhs = lhs
-        """index of the item the left-hand-side input comes from"""
-
-        self.rhs = rhs
-        """index of the item the right-hand-side input comes from"""
-
-        self.row = row
-        """row in the prefix-sum diagram"""
+        self.out = out; "index of the item to output to"
+        self.lhs = lhs; "index of the item the left-hand-side input comes from"
+        self.rhs = rhs; "index of the item the right-hand-side input comes from"
+        self.row = row; "row in the prefix-sum diagram"
 
 
 def prefix_sum_ops(item_count, *, work_efficient=False):
-    """ Get the associative operations needed to compute a parallel prefix-sum
+    """Get the associative operations needed to compute a parallel prefix-sum
     of `item_count` items.
 
     The operations aren't assumed to be commutative.
@@ -79,7 +72,7 @@ def prefix_sum_ops(item_count, *, work_efficient=False):
 
 
 def prefix_sum(items, fn=operator.add, *, work_efficient=False):
-    """ Compute the parallel prefix-sum of `items`, using associative operator
+    """Compute the parallel prefix-sum of `items`, using associative operator
     `fn` instead of addition.
 
     This has a depth of `O(log(N))` and an operation count of `O(N)` if
@@ -285,7 +278,7 @@ def tree_reduction(items, fn=operator.add):
 
 
 def pop_count(v, *, width=None, process_temporary=lambda v: v):
-    """ return the population count (number of 1 bits) of `v`.
+    """return the population count (number of 1 bits) of `v`.
     Arguments:
     v: nmigen.Value | int
         the value to calculate the pop-count of.
