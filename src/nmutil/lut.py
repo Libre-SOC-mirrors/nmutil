@@ -18,6 +18,7 @@ from nmigen.hdl.ir import Elaboratable
 from nmigen.cli import rtlil
 from nmutil.plain_data import plain_data
 
+
 class BitwiseMux(Elaboratable):
     """Mux, but treating input/output Signals as bit vectors, rather than
     integers. This means each bit in the output is independently multiplexed

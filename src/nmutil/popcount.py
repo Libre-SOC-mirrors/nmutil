@@ -59,4 +59,3 @@ if __name__ == "__main__":
     vl = rtlil.convert(m)
     with open("test_popcount.il", "w") as f:
         f.write(vl)
-
