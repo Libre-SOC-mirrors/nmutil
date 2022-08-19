@@ -1,14 +1,13 @@
 # based on ariane plru, from tlb.sv
 
-# old PLRU API, once all users have migrated to new API in plru2.py, then
-# plru2.py will be renamed to plru.py, replacing this file.
+# new PLRU API, once all users have migrated to new API in plru2.py, then
+# plru2.py will be renamed to plru.py.
 
 from nmigen import Signal, Module, Cat, Const, Repl, Array
 from nmigen.hdl.ir import Elaboratable
 from nmigen.cli import rtlil
 from nmigen.utils import log2_int
 from nmigen.lib.coding import Decoder
-from warnings import warn
 
 
 class PLRU(Elaboratable):
@@ -26,8 +25,6 @@ class PLRU(Elaboratable):
     """
 
     def __init__(self, BITS):
-        warn("nmutil.plru.PLRU is deprecated due to having a broken API, use "
-             "nmutil.plru2.PLRU instead", DeprecationWarning, stacklevel=2)
         self.BITS = BITS
         self.acc_i = Signal(BITS)
         self.acc_en = Signal()
@@ -123,8 +120,6 @@ class PLRU(Elaboratable):
 
 class PLRUs(Elaboratable):
     def __init__(self, n_plrus, n_bits):
-        warn("nmutil.plru.PLRUs is deprecated due to having a broken API, use "
-             "nmutil.plru2.PLRUs instead", DeprecationWarning, stacklevel=2)
         self.n_plrus = n_plrus
         self.n_bits = n_bits
         self.valid = Signal()
