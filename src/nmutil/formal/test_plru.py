@@ -2,12 +2,12 @@
 # Copyright 2022 Jacob Lifshay
 
 import unittest
-from nmigen.hdl.ast import (AnySeq, Assert, Signal, Assume, Const,
-                            unsigned, AnyConst, Value)
+from nmigen.hdl.ast import (AnySeq, Assert, Signal, Value, Array, Value)
 from nmigen.hdl.dsl import Module
+from nmigen.sim import Delay, Tick
 from nmutil.formaltest import FHDLTestCase
-from nmutil.plru import PLRU, PLRUs
-from nmutil.sim_util import write_il
+from nmutil.plru2 import PLRU  # , PLRUs
+from nmutil.sim_util import write_il, do_sim
 from nmutil.plain_data import plain_data
 
 
@@ -33,18 +33,29 @@ class PrettyPrintState:
 
 @plain_data()
 class PLRUNode:
-    __slots__ = "state", "left_child", "right_child"
+    __slots__ = "id", "state", "left_child", "right_child"
 
-    def __init__(self, state, left_child=None, right_child=None):
-        # type: (Signal, PLRUNode | None, PLRUNode | None) -> None
-        self.state = state
+    def __init__(self, id, left_child=None, right_child=None):
+        # type: (int, PLRUNode | None, PLRUNode | None) -> None
+        self.id = id
+        self.state = Signal(name=f"state_{id}")
         self.left_child = left_child
         self.right_child = right_child
+
+    @property
+    def depth(self):
+        depth = 0
+        if self.left_child is not None:
+            depth = max(depth, 1 + self.left_child.depth)
+        if self.right_child is not None:
+            depth = max(depth, 1 + self.right_child.depth)
+        return depth
 
     def __pretty_print(self, state):
         # type: (PrettyPrintState) -> None
         state.write("PLRUNode(")
         state.indent += 1
+        state.write(f"id={self.id!r},\n")
         state.write(f"state={self.state!r},\n")
         state.write("left_child=")
         if self.left_child is None:
@@ -61,59 +72,147 @@ class PLRUNode:
 
     def pretty_print(self, file=None):
         self.__pretty_print(PrettyPrintState(file=file))
+        print(file=file)
 
-    def set_states_from_index(self, m, index):
-        # type: (Module, Value) -> None
-        m.d.sync += self.state.eq(index[-1])
+    def set_states_from_index(self, m, index, ids):
+        # type: (Module, Value, list[Signal]) -> None
+        m.d.sync += self.state.eq(~index[-1])
+        m.d.comb += ids[0].eq(self.id)
         with m.If(index[-1]):
-            if self.left_child is not None:
-                self.left_child.set_states_from_index(m, index[:-1])
-        with m.Else():
             if self.right_child is not None:
-                self.right_child.set_states_from_index(m, index[:-1])
+                self.right_child.set_states_from_index(m, index[:-1], ids[1:])
+        with m.Else():
+            if self.left_child is not None:
+                self.left_child.set_states_from_index(m, index[:-1], ids[1:])
+
+    def get_lru(self, m, ids):
+        # type: (Module, list[Signal]) -> Signal
+        retval = Signal(1 + self.depth, name=f"lru_{self.id}", reset=0)
+        m.d.comb += retval[-1].eq(self.state)
+        m.d.comb += ids[0].eq(self.id)
+        with m.If(self.state):
+            if self.right_child is not None:
+                right_lru = self.right_child.get_lru(m, ids[1:])
+                m.d.comb += retval[:-1].eq(right_lru)
+        with m.Else():
+            if self.left_child is not None:
+                left_lru = self.left_child.get_lru(m, ids[1:])
+                m.d.comb += retval[:-1].eq(left_lru)
+        return retval
 
 
 class TestPLRU(FHDLTestCase):
-    @unittest.skip("not finished yet")
-    def tst(self, BITS):
-        # type: (int) -> None
+    def tst(self, log2_num_ways, test_seq=None):
+        # type: (int, list[int | None] | None) -> None
 
-        # FIXME: figure out what BITS is supposed to mean -- I would have
-        # expected it to be the number of cache ways, or the number of state
-        # bits in PLRU, but it's neither of those, making me think whoever
-        # converted the code botched their math.
-        #
-        # Until that's figured out, this test is broken.
+        @plain_data()
+        class MyAssert:
+            __slots__ = "test", "en"
 
-        dut = PLRU(BITS)
+            def __init__(self, test, en):
+                # type: (Value, Signal) -> None
+                self.test = test
+                self.en = en
+
+        asserts = []  # type: list[MyAssert]
+
+        def assert_(test):
+            if test_seq is None:
+                return [Assert(test, src_loc_at=1)]
+            assert_en = Signal(name="assert_en", src_loc_at=1, reset=False)
+            asserts.append(MyAssert(test=test, en=assert_en))
+            return [assert_en.eq(True)]
+
+        dut = PLRU(log2_num_ways, debug=True)  # check debug works
+        write_il(self, dut, ports=dut.ports())
+        # debug clutters up vcd, so disable it for formal proofs
+        dut = PLRU(log2_num_ways, debug=test_seq is not None)
+        num_ways = 1 << log2_num_ways
+        self.assertEqual(dut.log2_num_ways, log2_num_ways)
+        self.assertEqual(dut.num_ways, num_ways)
+        self.assertIsInstance(dut.acc_i, Signal)
+        self.assertIsInstance(dut.acc_en_i, Signal)
+        self.assertIsInstance(dut.lru_o, Signal)
+        self.assertEqual(len(dut.acc_i), log2_num_ways)
+        self.assertEqual(len(dut.acc_en_i), 1)
+        self.assertEqual(len(dut.lru_o), log2_num_ways)
         write_il(self, dut, ports=dut.ports())
         m = Module()
-        nodes = [PLRUNode(Signal(name=f"state_{i}")) for i in range(dut.TLBSZ)]
-        self.assertEqual(len(dut._plru_tree), len(nodes))
-        for i in range(1, dut.TLBSZ):
-            parent = (i + 1) // 2 - 1
-            if i % 2:
-                nodes[parent].left_child = nodes[i]
-            else:
-                nodes[parent].right_child = nodes[i]
-            m.d.comb += Assert(nodes[i].state == dut._plru_tree[i])
+        nodes = [PLRUNode(i) for i in range(num_ways - 1)]
+        self.assertIsInstance(dut._tree, Array)
+        self.assertEqual(len(dut._tree), len(nodes))
+        for i in range(len(nodes)):
+            if i != 0:
+                parent = (i + 1) // 2 - 1
+                if i % 2:
+                    nodes[parent].left_child = nodes[i]
+                else:
+                    nodes[parent].right_child = nodes[i]
+            self.assertIsInstance(dut._tree[i], Signal)
+            self.assertEqual(len(dut._tree[i]), 1)
+            m.d.comb += assert_(nodes[i].state == dut._tree[i])
 
-        in_index = Signal(range(BITS))
+        if test_seq is None:
+            m.d.comb += [
+                dut.acc_i.eq(AnySeq(log2_num_ways)),
+                dut.acc_en_i.eq(AnySeq(1)),
+            ]
 
-        m.d.comb += [
-            in_index.eq(AnySeq(range(BITS))),
-            Assume(in_index < BITS),
-            dut.acc_i.eq(1 << in_index),
-            dut.acc_en.eq(AnySeq(1)),
-        ]
+        l2nwr = range(log2_num_ways)
+        upd_ids = [Signal(log2_num_ways, name=f"upd_id_{i}") for i in l2nwr]
+        with m.If(dut.acc_en_i):
+            nodes[0].set_states_from_index(m, dut.acc_i, upd_ids)
 
-        with m.If(dut.acc_en):
-            nodes[0].set_states_from_index(m, in_index)
+            self.assertEqual(len(dut._upd_lru_nodes), len(upd_ids))
+            for l, r in zip(dut._upd_lru_nodes, upd_ids):
+                m.d.comb += assert_(l == r)
+
+        get_ids = [Signal(log2_num_ways, name=f"get_id_{i}") for i in l2nwr]
+        lru = Signal(log2_num_ways)
+        m.d.comb += lru.eq(nodes[0].get_lru(m, get_ids))
+        m.d.comb += assert_(dut.lru_o == lru)
+        self.assertEqual(len(dut._get_lru_nodes), len(get_ids))
+        for l, r in zip(dut._get_lru_nodes, get_ids):
+            m.d.comb += assert_(l == r)
 
         nodes[0].pretty_print()
 
         m.submodules.dut = dut
-        self.assertFormal(m, mode="prove")
+        if test_seq is None:
+            self.assertFormal(m, mode="prove", depth=2)
+        else:
+            traces = [dut.acc_i, dut.acc_en_i, *dut._tree]
+            for node in nodes:
+                traces.append(node.state)
+            traces += [
+                dut.lru_o, lru, *dut._get_lru_nodes, *get_ids,
+                *dut._upd_lru_nodes, *upd_ids,
+            ]
+
+            def subtest(acc_i, acc_en_i):
+                yield dut.acc_i.eq(acc_i)
+                yield dut.acc_en_i.eq(acc_en_i)
+                yield Tick()
+                yield Delay(0.7e-6)
+                for a in asserts:
+                    if (yield a.en):
+                        with self.subTest(
+                                assert_loc=':'.join(map(str, a.en.src_loc))):
+                            self.assertTrue((yield a.test))
+
+            def process():
+                for test_item in test_seq:
+                    if test_item is None:
+                        with self.subTest(test_item="None"):
+                            yield from subtest(acc_i=0, acc_en_i=0)
+                    else:
+                        with self.subTest(test_item=hex(test_item)):
+                            yield from subtest(acc_i=test_item, acc_en_i=1)
+
+            with do_sim(self, m, traces) as sim:
+                sim.add_clock(1e-6)
+                sim.add_process(process)
+                sim.run()
 
     def test_bits_1(self):
         self.tst(1)
@@ -133,35 +232,13 @@ class TestPLRU(FHDLTestCase):
     def test_bits_6(self):
         self.tst(6)
 
-    def test_bits_7(self):
-        self.tst(7)
-
-    def test_bits_8(self):
-        self.tst(8)
-
-    def test_bits_9(self):
-        self.tst(9)
-
-    def test_bits_10(self):
-        self.tst(10)
-
-    def test_bits_11(self):
-        self.tst(11)
-
-    def test_bits_12(self):
-        self.tst(12)
-
-    def test_bits_13(self):
-        self.tst(13)
-
-    def test_bits_14(self):
-        self.tst(14)
-
-    def test_bits_15(self):
-        self.tst(15)
-
-    def test_bits_16(self):
-        self.tst(16)
+    def test_bits_3_sim(self):
+        self.tst(3, [
+            0x0, 0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7,
+            None,
+            0x0, 0x4, 0x2, 0x6, 0x1, 0x5, 0x3, 0x7,
+            None,
+        ])
 
 
 if __name__ == "__main__":
