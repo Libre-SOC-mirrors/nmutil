@@ -19,10 +19,17 @@ class Op:
     __slots__ = "out", "lhs", "rhs", "row"
 
     def __init__(self, out, lhs, rhs, row):
-        self.out = out; "index of the item to output to"
-        self.lhs = lhs; "index of the item the left-hand-side input comes from"
-        self.rhs = rhs; "index of the item the right-hand-side input comes from"
-        self.row = row; "row in the prefix-sum diagram"
+        self.out = out
+        "index of the item to output to"
+
+        self.lhs = lhs
+        "index of the item the left-hand-side input comes from"
+
+        self.rhs = rhs
+        "index of the item the right-hand-side input comes from"
+
+        self.row = row
+        "row in the prefix-sum diagram"
 
 
 def prefix_sum_ops(item_count, *, work_efficient=False):
