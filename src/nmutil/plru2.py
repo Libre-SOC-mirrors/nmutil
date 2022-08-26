@@ -3,6 +3,8 @@
 
 # new PLRU API, once all users have migrated to new API in plru2.py, then
 # plru2.py will be renamed to plru.py.
+# IMPORTANT: since the API will change more, migration should be blocked on:
+# https://bugs.libre-soc.org/show_bug.cgi?id=913
 
 from nmigen.hdl.ir import Elaboratable, Display, Signal, Array, Const, Value
 from nmigen.hdl.dsl import Module
@@ -12,6 +14,9 @@ from nmigen.lib.coding import Decoder
 
 class PLRU(Elaboratable):
     r""" PLRU - Pseudo Least Recently Used Replacement
+
+        IMPORTANT: since the API will change more, migration should be blocked on:
+        https://bugs.libre-soc.org/show_bug.cgi?id=913
 
         PLRU-tree indexing:
         lvl0        0
@@ -28,6 +33,9 @@ class PLRU(Elaboratable):
     def __init__(self, log2_num_ways, debug=False):
         # type: (int, bool) -> None
         """
+        IMPORTANT: since the API will change more, migration should be blocked on:
+        https://bugs.libre-soc.org/show_bug.cgi?id=913
+
         Arguments:
         log2_num_ways: int
             the log-base-2 of the number of cache ways -- BITS in plru.vhdl
