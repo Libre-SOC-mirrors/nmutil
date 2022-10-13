@@ -17,6 +17,7 @@ def plain_data(*, eq: bool = True, unsafe_hash: bool = False,
 
 
 def fields(pd: Any) -> tuple[str, ...]:
+    ...
 
 
 def replace(pd: _T, **changes: Any) -> _T:
