@@ -4,8 +4,17 @@
 import operator
 import pickle
 import unittest
+import typing
 from nmutil.plain_data import (FrozenPlainDataError, plain_data,
                                fields, replace)
+
+try:
+    from typing import Protocol
+except ImportError:
+    try:
+        from typing_extensions import Protocol
+    except ImportError:
+        Protocol = None
 
 
 @plain_data(order=True)
@@ -67,6 +76,51 @@ class UnsetField:
             setattr(self, name, value)
 
 
+T = typing.TypeVar("T")
+
+
+@plain_data()
+class GenericClass(typing.Generic[T]):
+    __slots__ = "a",
+
+    def __init__(self, a):
+        self.a = a
+
+
+@plain_data()
+class MySet(typing.AbstractSet[int]):
+    __slots__ = ()
+
+    def __contains__(self, x):
+        raise NotImplementedError
+
+    def __iter__(self):
+        raise NotImplementedError
+
+    def __len__(self):
+        raise NotImplementedError
+
+
+@plain_data()
+class MyIntLike(typing.SupportsInt):
+    __slots__ = ()
+
+    def __int__(self):
+        return 1
+
+
+if Protocol is not None:
+    class MyProtocol(Protocol):
+        def my_method(self): ...
+
+    @plain_data()
+    class MyProtocolImpl(MyProtocol):
+        __slots__ = ()
+
+        def my_method(self):
+            pass
+
+
 class TestPlainData(unittest.TestCase):
     def test_fields(self):
         self.assertEqual(fields(PlainData0), ())
@@ -85,6 +139,11 @@ class TestPlainData(unittest.TestCase):
         self.assertEqual(fields(PlainDataF2), ("a", "b", "x", "y", "z"))
         self.assertEqual(fields(PlainDataF2(1, 2, x="x", y="y", z=3)),
                          ("a", "b", "x", "y", "z"))
+        self.assertEqual(fields(GenericClass(1)), ("a",))
+        self.assertEqual(fields(MySet()), ())
+        self.assertEqual(fields(MyIntLike()), ())
+        if Protocol is not None:
+            self.assertEqual(fields(MyProtocolImpl()), ())
         with self.assertRaisesRegex(
                 TypeError,
                 r"the passed-in object must be a class or an instance of a "

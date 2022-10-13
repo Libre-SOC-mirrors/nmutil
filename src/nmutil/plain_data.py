@@ -15,6 +15,52 @@ class __NotSet:
 __NOT_SET = __NotSet()
 
 
+def __ignored_classes():
+    classes = [object]  # type: list[type]
+
+    from abc import ABC
+
+    classes += [ABC]
+
+    from typing import (
+        Generic, SupportsAbs, SupportsBytes, SupportsComplex, SupportsFloat,
+        SupportsInt, SupportsRound)
+
+    classes += [
+        Generic, SupportsAbs, SupportsBytes, SupportsComplex, SupportsFloat,
+        SupportsInt, SupportsRound]
+
+    from collections.abc import (
+        Awaitable, Coroutine, AsyncIterable, AsyncIterator, AsyncGenerator,
+        Hashable, Iterable, Iterator, Generator, Reversible, Sized, Container,
+        Callable, Collection, Set, MutableSet, Mapping, MutableMapping,
+        MappingView, KeysView, ItemsView, ValuesView, Sequence,
+        MutableSequence)
+
+    classes += [
+        Awaitable, Coroutine, AsyncIterable, AsyncIterator, AsyncGenerator,
+        Hashable, Iterable, Iterator, Generator, Reversible, Sized, Container,
+        Callable, Collection, Set, MutableSet, Mapping, MutableMapping,
+        MappingView, KeysView, ItemsView, ValuesView, Sequence,
+        MutableSequence]
+
+    # rest aren't supported by python 3.7, so try to import them and skip if
+    # that errors
+
+    try:
+        # typing_extensions uses typing.Protocol if available
+        from typing_extensions import Protocol
+        classes.append(Protocol)
+    except ImportError:
+        pass
+
+    for cls in classes:
+        yield from cls.__mro__
+
+
+__IGNORED_CLASSES = frozenset(__ignored_classes())
+
+
 def _decorator(cls, *, eq, unsafe_hash, order, repr_, frozen):
     if not isinstance(cls, type):
         raise TypeError(
@@ -28,7 +74,13 @@ def _decorator(cls, *, eq, unsafe_hash, order, repr_, frozen):
     any_parents_have_dict = False
     any_parents_have_weakref = False
     for cur_cls in reversed(cls.__mro__):
-        if cur_cls is object:
+        d = getattr(cur_cls, "__dict__", {})
+        if cur_cls is not cls:
+            if "__dict__" in d:
+                any_parents_have_dict = True
+            if "__weakref__" in d:
+                any_parents_have_weakref = True
+        if cur_cls in __IGNORED_CLASSES:
             continue
         try:
             cur_slots = cur_cls.__slots__
@@ -47,11 +99,6 @@ def _decorator(cls, *, eq, unsafe_hash, order, repr_, frozen):
             if field not in slots:
                 fields.append(field)
             slots[field] = None
-            if cur_cls is not cls:
-                if field == "__dict__":
-                    any_parents_have_dict = True
-                elif field == "__weakref__":
-                    any_parents_have_weakref = True
 
     fields = tuple(fields)  # fields needs to be immutable
 
