@@ -1,5 +1,7 @@
 # SPDX-License-Identifier: LGPL-3-or-later
 # Copyright 2022 Jacob Lifshay programmerjake@gmail.com
+import keyword
+
 
 class FrozenPlainDataError(AttributeError):
     pass
@@ -96,6 +98,10 @@ def _decorator(cls, *, eq, unsafe_hash, order, repr_, frozen):
             if not isinstance(field, str):
                 raise TypeError("plain_data() requires __slots__ to be a "
                                 "tuple of str")
+            if not field.isidentifier() or keyword.iskeyword(field):
+                raise TypeError(
+                    "plain_data() requires __slots__ entries to be valid "
+                    "Python identifiers and not keywords")
             if field not in slots:
                 fields.append(field)
             slots[field] = None
@@ -181,52 +187,62 @@ def _decorator(cls, *, eq, unsafe_hash, order, repr_, frozen):
 
     add_method_or_error(__setstate__)
 
-    # get a tuple of all fields
-    def fields_tuple(self):
-        return tuple(getattr(self, name) for name in fields)
+    # get source code that gets a tuple of all fields
+    def fields_tuple(var):
+        # type: (str) -> str
+        l = []
+        for name in fields:
+            l.append(f"{var}.{name}, ")
+        return "(" + "".join(l) + ")"
 
     if eq:
-        def __eq__(self, other):
-            if other.__class__ is not self.__class__:
-                return NotImplemented
-            return fields_tuple(self) == fields_tuple(other)
+        exec(f"""
+def __eq__(self, other):
+    if other.__class__ is not self.__class__:
+        return NotImplemented
+    return {fields_tuple('self')} == {fields_tuple('other')}
 
-        add_method_or_error(__eq__)
+add_method_or_error(__eq__)
+""")
 
     if unsafe_hash:
-        def __hash__(self):
-            return hash(fields_tuple(self))
+        exec(f"""
+def __hash__(self):
+    return hash({fields_tuple('self')})
 
-        add_method_or_error(__hash__)
+add_method_or_error(__hash__)
+""")
 
     if order:
-        def __lt__(self, other):
-            if other.__class__ is not self.__class__:
-                return NotImplemented
-            return fields_tuple(self) < fields_tuple(other)
+        exec(f"""
+def __lt__(self, other):
+    if other.__class__ is not self.__class__:
+        return NotImplemented
+    return {fields_tuple('self')} < {fields_tuple('other')}
 
-        add_method_or_error(__lt__)
+add_method_or_error(__lt__)
 
-        def __le__(self, other):
-            if other.__class__ is not self.__class__:
-                return NotImplemented
-            return fields_tuple(self) <= fields_tuple(other)
+def __le__(self, other):
+    if other.__class__ is not self.__class__:
+        return NotImplemented
+    return {fields_tuple('self')} <= {fields_tuple('other')}
 
-        add_method_or_error(__le__)
+add_method_or_error(__le__)
 
-        def __gt__(self, other):
-            if other.__class__ is not self.__class__:
-                return NotImplemented
-            return fields_tuple(self) > fields_tuple(other)
+def __gt__(self, other):
+    if other.__class__ is not self.__class__:
+        return NotImplemented
+    return {fields_tuple('self')} > {fields_tuple('other')}
 
-        add_method_or_error(__gt__)
+add_method_or_error(__gt__)
 
-        def __ge__(self, other):
-            if other.__class__ is not self.__class__:
-                return NotImplemented
-            return fields_tuple(self) >= fields_tuple(other)
+def __ge__(self, other):
+    if other.__class__ is not self.__class__:
+        return NotImplemented
+    return {fields_tuple('self')} >= {fields_tuple('other')}
 
-        add_method_or_error(__ge__)
+add_method_or_error(__ge__)
+""")
 
     if repr_:
         def __repr__(self):
